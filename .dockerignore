@@ -1,0 +1,28 @@
+# Dependencies & build output — rebuilt inside the image; host copies would
+# overwrite the Linux node_modules and bloat the build context.
+node_modules
+.next
+dist
+
+# VCS & CI
+.git
+.github
+
+# Local env / secrets (compose passes env directly)
+.env
+.env.local
+.env.*.local
+
+# Large local-only assets and bundled toolchain
+.tmp
+.tools
+.backup
+
+# Test & coverage artifacts
+coverage
+playwright-report
+test-results
+
+# Logs and TS build cache
+*.log
+*.tsbuildinfo
