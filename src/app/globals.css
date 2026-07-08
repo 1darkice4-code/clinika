@@ -1,0 +1,246 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/*
+  "Тихая клиническая роскошь" palette — muted warm neutrals (bone / espresso),
+  gold kept as a restrained accent. Variable names are unchanged so Tailwind
+  config and existing components keep working.
+*/
+:root {
+  --background: 28 12% 9%;
+  --foreground: 36 22% 90%;
+  --card: 28 9% 12%;
+  --card-foreground: 36 22% 90%;
+  --primary: 34 42% 62%;
+  --primary-foreground: 28 14% 10%;
+  --muted: 28 8% 17%;
+  --muted-foreground: 34 12% 66%;
+  --accent: 20 34% 58%;
+  --accent-foreground: 28 14% 10%;
+  --destructive: 0 62% 46%;
+  --destructive-foreground: 0 0% 100%;
+  --border: 28 8% 21%;
+  --input: 28 8% 21%;
+  --ring: 34 42% 62%;
+  --surface-soft: 28 11% 7%;
+  --surface-deep: 28 12% 9%;
+  --hero-mid: 28 9% 11%;
+  --hero-end: 28 12% 8%;
+  --hero-warm-glow: 34 42% 56% / 0.12;
+  --hero-cool-glow: 36 18% 86% / 0.04;
+  --panel-from: 28 9% 15%;
+  --panel-to: 28 12% 9%;
+  --panel-glow: 34 42% 56% / 0.12;
+  --soft-shadow: 0 0% 0% / 0.4;
+  --metal: 34 42% 60%;
+  --metal-strong: 36 52% 76%;
+  --metal-glow: 34 46% 54% / 0.22;
+}
+
+.light {
+  --background: 36 26% 94%;
+  --foreground: 24 14% 15%;
+  --card: 38 34% 98%;
+  --card-foreground: 24 14% 15%;
+  --primary: 30 32% 40%;
+  --primary-foreground: 40 40% 97%;
+  --muted: 36 18% 89%;
+  --muted-foreground: 28 8% 40%;
+  --accent: 16 28% 58%;
+  --accent-foreground: 40 40% 97%;
+  --destructive: 0 62% 46%;
+  --destructive-foreground: 0 0% 100%;
+  --border: 34 15% 85%;
+  --input: 34 15% 85%;
+  --ring: 30 32% 40%;
+  --surface-soft: 36 22% 91%;
+  --surface-deep: 36 26% 94%;
+  --hero-mid: 36 22% 91%;
+  --hero-end: 36 26% 95%;
+  --hero-warm-glow: 30 40% 60% / 0.1;
+  --hero-cool-glow: 24 10% 20% / 0.045;
+  --panel-from: 38 34% 98%;
+  --panel-to: 36 20% 90%;
+  --panel-glow: 30 40% 58% / 0.1;
+  --soft-shadow: 28 22% 22% / 0.1;
+  --metal: 32 30% 44%;
+  --metal-strong: 28 36% 32%;
+  --metal-glow: 32 40% 50% / 0.16;
+}
+
+* {
+  border-color: hsl(var(--border));
+}
+
+html {
+  scroll-behavior: smooth;
+  /* Offset anchor jumps so section headings clear the 4rem sticky site header. */
+  scroll-padding-top: 5rem;
+}
+
+body {
+  margin: 0;
+  background:
+    radial-gradient(circle at 18% -8%, hsl(var(--hero-warm-glow)), transparent 30%),
+    linear-gradient(180deg, hsl(var(--background)) 0%, hsl(var(--surface-soft)) 100%);
+  background-attachment: fixed;
+  color: hsl(var(--foreground));
+  font-family: var(--font-sans, system-ui, -apple-system, "Segoe UI", sans-serif);
+  font-feature-settings: "rlig" 1, "calt" 1;
+  -webkit-font-smoothing: antialiased;
+}
+
+a,
+button,
+input,
+select,
+textarea {
+  outline-color: hsl(var(--ring));
+}
+
+::selection {
+  background: hsl(var(--primary));
+  color: hsl(var(--primary-foreground));
+}
+
+.brand-word {
+  font-family: var(--font-display, Georgia, "Times New Roman", serif);
+  font-weight: 600;
+  letter-spacing: 0;
+  line-height: 0.95;
+}
+
+.brand-word-tight {
+  font-family: var(--font-display, Georgia, "Times New Roman", serif);
+  font-weight: 600;
+  letter-spacing: 0;
+}
+
+.landing-page h1,
+.landing-page h2,
+.landing-page .display-serif {
+  font-family: var(--font-display, Georgia, "Times New Roman", serif);
+  letter-spacing: -0.01em;
+}
+
+.landing-page h1,
+.landing-page h2 {
+  font-weight: 500;
+}
+
+/* Subtle filmic grain over the landing for an editorial, premium feel. */
+.landing-page::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  pointer-events: none;
+  opacity: 0.035;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+.landing-hero-bg {
+  background:
+    radial-gradient(circle at 22% 0%, hsl(var(--hero-warm-glow)), transparent 32%),
+    radial-gradient(circle at 86% 16%, hsl(var(--hero-cool-glow)), transparent 30%),
+    linear-gradient(160deg, hsl(var(--background)), hsl(var(--hero-mid)) 62%, hsl(var(--hero-end)));
+}
+
+.surface-soft {
+  background-color: hsl(var(--surface-soft));
+}
+
+.surface-deep {
+  background-color: hsl(var(--surface-deep));
+}
+
+.panel-gradient {
+  background: linear-gradient(135deg, hsl(var(--panel-from)), hsl(var(--panel-to)));
+}
+
+.panel-glow {
+  background: radial-gradient(circle at 75% 22%, hsl(var(--panel-glow)), transparent 32%);
+}
+
+.hero-editorial-frame {
+  background:
+    linear-gradient(180deg, hsl(var(--card) / 0.1), hsl(var(--card) / 0.96)),
+    hsl(var(--card));
+}
+
+.hero-editorial-image {
+  filter: saturate(0.7) contrast(0.96);
+}
+
+.light .hero-editorial-image {
+  filter: saturate(0.64) contrast(0.95) brightness(1.02);
+}
+
+.hero-editorial-vignette {
+  background:
+    linear-gradient(180deg, hsl(222 14% 8% / 0.05) 40%, hsl(222 14% 8% / 0.72) 82%, hsl(222 14% 8% / 0.86)),
+    radial-gradient(circle at 18% 12%, hsl(var(--hero-warm-glow)), transparent 34%);
+}
+
+.light .hero-editorial-vignette {
+  background:
+    linear-gradient(180deg, hsl(42 55% 96% / 0.02) 38%, hsl(222 14% 8% / 0.6) 80%, hsl(222 14% 8% / 0.8)),
+    radial-gradient(circle at 18% 12%, hsl(var(--hero-warm-glow)), transparent 34%);
+}
+
+.editorial-rule {
+  background: linear-gradient(90deg, hsl(var(--metal) / 0), hsl(var(--metal) / 0.72), hsl(var(--metal) / 0));
+}
+
+.hairline {
+  height: 1px;
+  background: linear-gradient(90deg, hsl(var(--border)), hsl(var(--metal) / 0.5), hsl(var(--border)));
+}
+
+.soft-shadow {
+  box-shadow: 0 24px 80px hsl(var(--soft-shadow));
+}
+
+.text-metal {
+  color: hsl(var(--metal));
+}
+
+.text-metal-strong {
+  color: hsl(var(--metal-strong));
+}
+
+.border-metal {
+  border-color: hsl(var(--metal) / 0.45);
+}
+
+.bg-metal-line {
+  background-color: hsl(var(--metal));
+}
+
+.metal-glow {
+  box-shadow: 0 0 22px hsl(var(--metal-glow));
+}
+
+/* Scroll-reveal: hidden until the FadeIn observer adds .is-visible. */
+.fade-in {
+  opacity: 0;
+  transform: translateY(22px);
+  transition:
+    opacity 0.8s cubic-bezier(0.22, 0.61, 0.36, 1),
+    transform 0.8s cubic-bezier(0.22, 0.61, 0.36, 1);
+  will-change: opacity, transform;
+}
+
+.fade-in.is-visible {
+  opacity: 1;
+  transform: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fade-in {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+}

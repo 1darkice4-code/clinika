@@ -1,0 +1,39 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: clinika_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: clinika
+      POSTGRES_USER: clinika
+      POSTGRES_PASSWORD: clinika_password
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U clinika -d clinika"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: clinika_app
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://clinika:clinika_password@postgres:5432/clinika?schema=public
+      APP_URL: http://localhost:3000
+      AUTH_SECRET: replace-with-at-least-32-random-characters
+      CLINIC_TIMEZONE: Europe/Moscow
+      NOTIFICATION_MODE: local
+      LOG_LEVEL: info
+    ports:
+      - "3000:3000"
+
+volumes:
+  postgres_data:

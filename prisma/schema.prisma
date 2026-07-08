@@ -1,0 +1,883 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserStatus {
+  ACTIVE
+  INVITED
+  BLOCKED
+  DELETED
+}
+
+enum PreferredContactMethod {
+  PHONE
+  EMAIL
+  TELEGRAM
+  WHATSAPP
+}
+
+enum LeadStatus {
+  NEW
+  IN_PROGRESS
+  NO_CONTACT
+  WAITING_FOR_CLIENT
+  BOOKED
+  DECLINED
+  SPAM
+  CLOSED
+}
+
+enum AppointmentStatus {
+  PENDING_CONFIRMATION
+  CONFIRMED
+  ARRIVED
+  COMPLETED
+  NO_SHOW
+  CANCELLED_BY_CLIENT
+  CANCELLED_BY_CLINIC
+  RESCHEDULED
+}
+
+enum AppointmentCreationMethod {
+  SITE
+  ADMIN
+  IMPORT
+  INTEGRATION
+}
+
+enum ScheduleExceptionType {
+  DAY_OFF
+  VACATION
+  SICK_LEAVE
+  CUSTOM_WORKDAY
+}
+
+enum LegalDocumentType {
+  PRIVACY_POLICY
+  PERSONAL_DATA_CONSENT
+  MARKETING_CONSENT
+  USER_AGREEMENT
+  COOKIE_POLICY
+  IMAGE_PUBLICATION_CONSENT
+  LICENSE
+}
+
+enum ContentStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+enum ConsentSource {
+  PUBLIC_BOOKING
+  CALLBACK_FORM
+  ADMIN
+  IMPORT
+}
+
+enum ConversionType {
+  LEAD
+  APPOINTMENT
+}
+
+enum NotificationChannel {
+  EMAIL
+  SMS
+  TELEGRAM
+  WHATSAPP
+  IN_APP
+}
+
+enum NotificationStatus {
+  PENDING
+  SENT
+  DELIVERED
+  FAILED
+  CANCELLED
+}
+
+enum PageType {
+  HOME
+  LANDING
+  LEGAL
+  SYSTEM
+}
+
+enum PageSectionType {
+  HERO
+  ABOUT
+  SERVICES
+  SPECIALISTS
+  PRICES
+  BEFORE_AFTER
+  REVIEWS
+  LICENSES
+  CONTACTS
+  FAQ
+  CTA
+}
+
+enum MediaVisibility {
+  PUBLIC
+  PRIVATE
+}
+
+enum ReviewStatus {
+  PENDING
+  PUBLISHED
+  REJECTED
+}
+
+enum TaskStatus {
+  OPEN
+  DONE
+  CANCELLED
+}
+
+enum NotificationMode {
+  LOCAL
+  PROVIDER
+}
+
+model User {
+  id               String     @id @default(cuid())
+  email            String     @unique
+  emailVerifiedAt  DateTime?
+  passwordHash     String
+  name             String
+  phone            String?
+  status           UserStatus @default(ACTIVE)
+  lastLoginAt      DateTime?
+  failedLoginCount Int        @default(0)
+  lockedUntil      DateTime?
+  createdAt        DateTime   @default(now())
+  updatedAt        DateTime   @updatedAt
+  deletedAt        DateTime?
+
+  roles                    UserRole[]
+  sessions                 UserSession[]
+  passwordResetTokens      PasswordResetToken[]
+  loginAttempts            LoginAttempt[]
+  specialist               Specialist?
+  clientNotes              ClientNote[]
+  assignedClients          Client[]                   @relation("AssignedClients")
+  assignedLeads            Lead[]                     @relation("AssignedLeads")
+  createdAppointments      Appointment[]              @relation("CreatedAppointments")
+  leadStatusChanges        LeadStatusHistory[]
+  appointmentStatusChanges AppointmentStatusHistory[]
+  tasksAssigned            Task[]                     @relation("AssignedTasks")
+  tasksCreated             Task[]                     @relation("CreatedTasks")
+  uploadedMedia            MediaFile[]
+  auditLogs                AuditLog[]
+
+  @@index([status])
+}
+
+model Role {
+  id          String   @id @default(cuid())
+  code        String   @unique
+  name        String
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  users       UserRole[]
+  permissions RolePermission[]
+}
+
+model Permission {
+  id          String  @id @default(cuid())
+  code        String  @unique
+  description String?
+
+  roles RolePermission[]
+}
+
+model UserRole {
+  userId    String
+  roleId    String
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role Role @relation(fields: [roleId], references: [id], onDelete: Cascade)
+
+  @@id([userId, roleId])
+}
+
+model RolePermission {
+  roleId       String
+  permissionId String
+
+  role       Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permission Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  @@id([roleId, permissionId])
+}
+
+model UserSession {
+  id            String    @id @default(cuid())
+  userId        String
+  tokenHash     String    @unique
+  expiresAt     DateTime
+  ipHash        String?
+  userAgentHash String?
+  createdAt     DateTime  @default(now())
+  revokedAt     DateTime?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, expiresAt])
+  @@index([tokenHash])
+}
+
+model PasswordResetToken {
+  id        String    @id @default(cuid())
+  userId    String
+  tokenHash String    @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, expiresAt])
+}
+
+model LoginAttempt {
+  id            String   @id @default(cuid())
+  userId        String?
+  email         String
+  success       Boolean
+  ipHash        String?
+  userAgentHash String?
+  createdAt     DateTime @default(now())
+
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([email, createdAt])
+  @@index([userId, createdAt])
+}
+
+model Client {
+  id                     String                 @id @default(cuid())
+  firstName              String
+  lastName               String?
+  phone                  String
+  normalizedPhone        String
+  email                  String?
+  birthDate              DateTime?
+  preferredContactMethod PreferredContactMethod @default(PHONE)
+  personalDataConsentAt  DateTime?
+  marketingConsentAt     DateTime?
+  firstAttributionId     String?
+  assignedUserId         String?
+  internalComment        String?
+  createdAt              DateTime               @default(now())
+  updatedAt              DateTime               @updatedAt
+  deletedAt              DateTime?
+
+  firstAttribution UTMAttribution? @relation(fields: [firstAttributionId], references: [id])
+  assignedUser     User?           @relation("AssignedClients", fields: [assignedUserId], references: [id])
+  tags             ClientTag[]
+  notes            ClientNote[]
+  tasks            Task[]
+  leads            Lead[]
+  appointments     Appointment[]
+  consents         Consent[]
+  notifications    Notification[]
+
+  @@unique([normalizedPhone])
+  @@index([email])
+  @@index([assignedUserId])
+  @@index([createdAt])
+}
+
+model Tag {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  color     String
+  createdAt DateTime @default(now())
+
+  clients ClientTag[]
+}
+
+model ClientTag {
+  clientId String
+  tagId    String
+
+  client Client @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  tag    Tag    @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([clientId, tagId])
+}
+
+model ClientNote {
+  id           String    @id @default(cuid())
+  clientId     String
+  authorUserId String
+  body         String
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  deletedAt    DateTime?
+
+  client Client @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  author User   @relation(fields: [authorUserId], references: [id])
+
+  @@index([clientId, createdAt])
+}
+
+model Task {
+  id              String     @id @default(cuid())
+  clientId        String?
+  leadId          String?
+  appointmentId   String?
+  assignedUserId  String
+  createdByUserId String
+  title           String
+  description     String?
+  dueAt           DateTime?
+  status          TaskStatus @default(OPEN)
+  createdAt       DateTime   @default(now())
+  updatedAt       DateTime   @updatedAt
+
+  client        Client?      @relation(fields: [clientId], references: [id])
+  lead          Lead?        @relation(fields: [leadId], references: [id])
+  appointment   Appointment? @relation(fields: [appointmentId], references: [id])
+  assignedUser  User         @relation("AssignedTasks", fields: [assignedUserId], references: [id])
+  createdByUser User         @relation("CreatedTasks", fields: [createdByUserId], references: [id])
+
+  @@index([assignedUserId, status, dueAt])
+  @@index([clientId])
+}
+
+model ServiceCategory {
+  id            String    @id @default(cuid())
+  name          String
+  slug          String    @unique
+  description   String?
+  sortOrder     Int       @default(0)
+  isActive      Boolean   @default(true)
+  seoMetadataId String?   @unique
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  deletedAt     DateTime?
+
+  seoMetadata SeoMetadata? @relation(fields: [seoMetadataId], references: [id])
+  services    Service[]
+}
+
+model Service {
+  id                  String    @id @default(cuid())
+  categoryId          String
+  name                String
+  slug                String    @unique
+  shortDescription    String
+  fullDescription     String
+  priceFrom           Int?
+  priceExact          Int?
+  currency            String    @default("RUB")
+  durationMinutes     Int
+  bufferBeforeMinutes Int       @default(0)
+  bufferAfterMinutes  Int       @default(10)
+  contraindications   String?
+  disclaimer          String?
+  isActive            Boolean   @default(true)
+  isFeatured          Boolean   @default(false)
+  sortOrder           Int       @default(0)
+  seoMetadataId       String?   @unique
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+  deletedAt           DateTime?
+
+  category           ServiceCategory     @relation(fields: [categoryId], references: [id])
+  seoMetadata        SeoMetadata?        @relation(fields: [seoMetadataId], references: [id])
+  specialistServices SpecialistService[]
+  leads              Lead[]
+  appointments       Appointment[]
+  reviews            Review[]
+  beforeAfterCases   BeforeAfterCase[]
+
+  @@index([categoryId, isActive])
+  @@index([isFeatured, sortOrder])
+}
+
+model Specialist {
+  id              String    @id @default(cuid())
+  userId          String?   @unique
+  firstName       String
+  lastName        String
+  slug            String    @unique
+  photoMediaId    String?
+  position        String
+  specialization  String
+  experienceYears Int
+  education       String
+  certificates    String?
+  description     String
+  isActive        Boolean   @default(true)
+  sortOrder       Int       @default(0)
+  seoMetadataId   String?   @unique
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  deletedAt       DateTime?
+
+  user               User?               @relation(fields: [userId], references: [id])
+  photo              MediaFile?          @relation("SpecialistPhoto", fields: [photoMediaId], references: [id])
+  seoMetadata        SeoMetadata?        @relation(fields: [seoMetadataId], references: [id])
+  services           SpecialistService[]
+  workSchedules      WorkSchedule[]
+  scheduleExceptions ScheduleException[]
+  timeBlocks         TimeBlock[]
+  leads              Lead[]
+  appointments       Appointment[]
+  reviews            Review[]
+  beforeAfterCases   BeforeAfterCase[]
+}
+
+model SpecialistService {
+  specialistId          String
+  serviceId             String
+  customDurationMinutes Int?
+  customPriceFrom       Int?
+  isActive              Boolean @default(true)
+
+  specialist Specialist @relation(fields: [specialistId], references: [id], onDelete: Cascade)
+  service    Service    @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+
+  @@id([specialistId, serviceId])
+}
+
+model WorkSchedule {
+  id                String    @id @default(cuid())
+  specialistId      String
+  weekday           Int
+  startsAtLocalTime String
+  endsAtLocalTime   String
+  breaksJson        Json?
+  isActive          Boolean   @default(true)
+  validFrom         DateTime?
+  validTo           DateTime?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  specialist Specialist @relation(fields: [specialistId], references: [id], onDelete: Cascade)
+
+  @@index([specialistId, weekday, isActive])
+}
+
+model ScheduleException {
+  id                String                @id @default(cuid())
+  specialistId      String
+  date              DateTime
+  type              ScheduleExceptionType
+  startsAtLocalTime String?
+  endsAtLocalTime   String?
+  reason            String?
+  createdAt         DateTime              @default(now())
+  updatedAt         DateTime              @updatedAt
+
+  specialist Specialist @relation(fields: [specialistId], references: [id], onDelete: Cascade)
+
+  @@index([specialistId, date])
+}
+
+model TimeBlock {
+  id              String   @id @default(cuid())
+  specialistId    String
+  startsAtUtc     DateTime
+  endsAtUtc       DateTime
+  reason          String
+  createdByUserId String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  specialist Specialist @relation(fields: [specialistId], references: [id], onDelete: Cascade)
+
+  @@index([specialistId, startsAtUtc, endsAtUtc])
+}
+
+model Lead {
+  id                    String     @id @default(cuid())
+  publicNumber          String     @unique
+  clientId              String
+  serviceId             String?
+  preferredSpecialistId String?
+  status                LeadStatus @default(NEW)
+  comment               String?
+  preferredContactTime  String?
+  source                String?
+  attributionId         String?
+  assignedUserId        String?
+  nextContactAt         DateTime?
+  declineReason         String?
+  idempotencyKeyHash    String?    @unique
+  createdAt             DateTime   @default(now())
+  updatedAt             DateTime   @updatedAt
+  closedAt              DateTime?
+
+  client              Client              @relation(fields: [clientId], references: [id])
+  service             Service?            @relation(fields: [serviceId], references: [id])
+  preferredSpecialist Specialist?         @relation(fields: [preferredSpecialistId], references: [id])
+  attribution         UTMAttribution?     @relation(fields: [attributionId], references: [id])
+  assignedUser        User?               @relation("AssignedLeads", fields: [assignedUserId], references: [id])
+  statusHistory       LeadStatusHistory[]
+  appointments        Appointment[]
+  tasks               Task[]
+  notifications       Notification[]
+
+  @@index([clientId])
+  @@index([status, createdAt])
+  @@index([assignedUserId, status])
+  @@index([serviceId])
+  @@index([attributionId])
+}
+
+model LeadStatusHistory {
+  id              String      @id @default(cuid())
+  leadId          String
+  fromStatus      LeadStatus?
+  toStatus        LeadStatus
+  changedByUserId String?
+  reason          String?
+  createdAt       DateTime    @default(now())
+
+  lead          Lead  @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  changedByUser User? @relation(fields: [changedByUserId], references: [id])
+
+  @@index([leadId, createdAt])
+}
+
+model Appointment {
+  id                 String                    @id @default(cuid())
+  publicNumber       String                    @unique
+  clientId           String
+  serviceId          String
+  specialistId       String
+  leadId             String?
+  startsAtUtc        DateTime
+  endsAtUtc          DateTime
+  clinicTimezone     String
+  priceAtBooking     Int?
+  currency           String                    @default("RUB")
+  source             String?
+  attributionId      String?
+  clientComment      String?
+  internalComment    String?
+  status             AppointmentStatus         @default(PENDING_CONFIRMATION)
+  cancelReason       String?
+  createdByUserId    String?
+  creationMethod     AppointmentCreationMethod @default(SITE)
+  idempotencyKeyHash String?                   @unique
+  createdAt          DateTime                  @default(now())
+  updatedAt          DateTime                  @updatedAt
+  cancelledAt        DateTime?
+  deletedAt          DateTime?
+
+  client        Client                     @relation(fields: [clientId], references: [id])
+  service       Service                    @relation(fields: [serviceId], references: [id])
+  specialist    Specialist                 @relation(fields: [specialistId], references: [id])
+  lead          Lead?                      @relation(fields: [leadId], references: [id])
+  attribution   UTMAttribution?            @relation(fields: [attributionId], references: [id])
+  createdByUser User?                      @relation("CreatedAppointments", fields: [createdByUserId], references: [id])
+  statusHistory AppointmentStatusHistory[]
+  tasks         Task[]
+  notifications Notification[]
+
+  @@index([clientId])
+  @@index([specialistId, startsAtUtc])
+  @@index([status, startsAtUtc])
+  @@index([serviceId])
+  @@index([attributionId])
+}
+
+model AppointmentStatusHistory {
+  id              String             @id @default(cuid())
+  appointmentId   String
+  fromStatus      AppointmentStatus?
+  toStatus        AppointmentStatus
+  changedByUserId String?
+  reason          String?
+  createdAt       DateTime           @default(now())
+
+  appointment   Appointment @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
+  changedByUser User?       @relation(fields: [changedByUserId], references: [id])
+
+  @@index([appointmentId, createdAt])
+}
+
+model UTMAttribution {
+  id             String         @id @default(cuid())
+  utmSource      String?
+  utmMedium      String?
+  utmCampaign    String?
+  utmContent     String?
+  utmTerm        String?
+  referrer       String?
+  landingPage    String?
+  source         String?
+  conversionType ConversionType
+  clientIpHash   String?
+  userAgentHash  String?
+  createdAt      DateTime       @default(now())
+
+  firstClients Client[]
+  leads        Lead[]
+  appointments Appointment[]
+
+  @@index([utmSource, createdAt])
+  @@index([source, createdAt])
+  @@index([conversionType, createdAt])
+}
+
+model LegalDocument {
+  id          String            @id @default(cuid())
+  type        LegalDocumentType
+  slug        String            @unique
+  title       String
+  content     String
+  version     String
+  status      ContentStatus     @default(DRAFT)
+  publishedAt DateTime?
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+
+  consents Consent[]
+
+  @@unique([type, version])
+}
+
+model Consent {
+  id              String            @id @default(cuid())
+  clientId        String
+  legalDocumentId String
+  type            LegalDocumentType
+  acceptedAt      DateTime
+  revokedAt       DateTime?
+  source          ConsentSource
+  ipHash          String?
+  userAgentHash   String?
+  createdAt       DateTime          @default(now())
+
+  client        Client        @relation(fields: [clientId], references: [id])
+  legalDocument LegalDocument @relation(fields: [legalDocumentId], references: [id])
+
+  @@index([clientId, type, acceptedAt])
+  @@index([legalDocumentId])
+}
+
+model NotificationTemplate {
+  id            String              @id @default(cuid())
+  eventType     String
+  channel       NotificationChannel
+  name          String
+  subject       String?
+  body          String
+  variablesJson Json?
+  isActive      Boolean             @default(true)
+  createdAt     DateTime            @default(now())
+  updatedAt     DateTime            @updatedAt
+
+  notifications Notification[]
+
+  @@unique([eventType, channel])
+}
+
+model Notification {
+  id                String              @id @default(cuid())
+  templateId        String?
+  channel           NotificationChannel
+  recipient         String?
+  recipientUserId   String?
+  clientId          String?
+  appointmentId     String?
+  leadId            String?
+  eventType         String
+  payloadJson       Json
+  status            NotificationStatus  @default(PENDING)
+  attempts          Int                 @default(0)
+  nextRetryAt       DateTime?
+  providerMessageId String?
+  lastError         String?
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+  sentAt            DateTime?
+
+  template    NotificationTemplate? @relation(fields: [templateId], references: [id])
+  client      Client?               @relation(fields: [clientId], references: [id])
+  appointment Appointment?          @relation(fields: [appointmentId], references: [id])
+  lead        Lead?                 @relation(fields: [leadId], references: [id])
+
+  @@index([status, nextRetryAt])
+  @@index([clientId, createdAt])
+  @@index([appointmentId])
+  @@index([leadId])
+}
+
+model Page {
+  id            String        @id @default(cuid())
+  slug          String        @unique
+  title         String
+  type          PageType
+  status        ContentStatus @default(DRAFT)
+  seoMetadataId String?       @unique
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+  publishedAt   DateTime?
+
+  seoMetadata SeoMetadata?  @relation(fields: [seoMetadataId], references: [id])
+  sections    PageSection[]
+}
+
+model PageSection {
+  id         String          @id @default(cuid())
+  pageId     String
+  type       PageSectionType
+  title      String?
+  subtitle   String?
+  configJson Json
+  sortOrder  Int             @default(0)
+  isVisible  Boolean         @default(true)
+  createdAt  DateTime        @default(now())
+  updatedAt  DateTime        @updatedAt
+
+  page Page @relation(fields: [pageId], references: [id], onDelete: Cascade)
+
+  @@index([pageId, sortOrder])
+}
+
+model SeoMetadata {
+  id                 String   @id @default(cuid())
+  title              String
+  description        String
+  canonicalPath      String?
+  ogTitle            String?
+  ogDescription      String?
+  ogImageMediaId     String?
+  twitterTitle       String?
+  twitterDescription String?
+  noIndex            Boolean  @default(false)
+  structuredDataJson Json?
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  category   ServiceCategory?
+  service    Service?
+  specialist Specialist?
+  page       Page?
+}
+
+model MediaFile {
+  id               String          @id @default(cuid())
+  storageKey       String          @unique
+  publicUrl        String?
+  originalName     String
+  mimeType         String
+  sizeBytes        Int
+  width            Int?
+  height           Int?
+  alt              String?
+  visibility       MediaVisibility @default(PUBLIC)
+  uploadedByUserId String?
+  createdAt        DateTime        @default(now())
+  deletedAt        DateTime?
+
+  uploadedBy       User?             @relation(fields: [uploadedByUserId], references: [id])
+  specialistPhotos Specialist[]      @relation("SpecialistPhoto")
+  beforeCases      BeforeAfterCase[] @relation("BeforeMedia")
+  afterCases       BeforeAfterCase[] @relation("AfterMedia")
+
+  @@index([visibility])
+  @@index([mimeType])
+}
+
+model Review {
+  id                String       @id @default(cuid())
+  clientDisplayName String
+  text              String
+  rating            Int
+  source            String?
+  reviewDate        DateTime
+  status            ReviewStatus @default(PENDING)
+  serviceId         String?
+  specialistId      String?
+  createdAt         DateTime     @default(now())
+  updatedAt         DateTime     @updatedAt
+
+  service    Service?    @relation(fields: [serviceId], references: [id])
+  specialist Specialist? @relation(fields: [specialistId], references: [id])
+
+  @@index([status, reviewDate])
+  @@index([serviceId])
+  @@index([specialistId])
+}
+
+model BeforeAfterCase {
+  id                 String        @id @default(cuid())
+  title              String
+  description        String
+  serviceId          String?
+  specialistId       String?
+  beforeMediaId      String
+  afterMediaId       String
+  consentConfirmedAt DateTime?
+  status             ContentStatus @default(DRAFT)
+  sortOrder          Int           @default(0)
+  createdAt          DateTime      @default(now())
+  updatedAt          DateTime      @updatedAt
+
+  service     Service?    @relation(fields: [serviceId], references: [id])
+  specialist  Specialist? @relation(fields: [specialistId], references: [id])
+  beforeMedia MediaFile   @relation("BeforeMedia", fields: [beforeMediaId], references: [id])
+  afterMedia  MediaFile   @relation("AfterMedia", fields: [afterMediaId], references: [id])
+
+  @@index([status, sortOrder])
+  @@index([serviceId])
+  @@index([specialistId])
+}
+
+model ClinicSettings {
+  id                    String           @id @default(cuid())
+  clinicName            String
+  legalName             String
+  taxId                 String?
+  address               String
+  phone                 String
+  email                 String
+  messengersJson        Json?
+  socialLinksJson       Json?
+  workingHoursJson      Json?
+  timezone              String           @default("Asia/Chita")
+  mapEmbedUrl           String?
+  notificationMode      NotificationMode @default(LOCAL)
+  bookingMinLeadMinutes Int              @default(120)
+  bookingMaxHorizonDays Int              @default(45)
+  createdAt             DateTime         @default(now())
+  updatedAt             DateTime         @updatedAt
+}
+
+model AuditLog {
+  id            String   @id @default(cuid())
+  userId        String?
+  action        String
+  entityType    String
+  entityId      String?
+  description   String
+  beforeJson    Json?
+  afterJson     Json?
+  ipHash        String?
+  userAgentHash String?
+  requestId     String?
+  createdAt     DateTime @default(now())
+
+  user User? @relation(fields: [userId], references: [id])
+
+  @@index([userId, createdAt])
+  @@index([entityType, entityId])
+  @@index([action, createdAt])
+  @@index([requestId])
+}

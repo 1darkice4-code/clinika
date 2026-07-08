@@ -1,0 +1,45 @@
+name: CI
+
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+    branches: ["main"]
+
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: clinika
+          POSTGRES_USER: clinika
+          POSTGRES_PASSWORD: clinika_password
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U clinika -d clinika"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      DATABASE_URL: postgresql://clinika:clinika_password@localhost:5432/clinika?schema=public
+      APP_URL: http://localhost:3000
+      AUTH_SECRET: ci-secret-with-at-least-32-characters
+      CLINIC_TIMEZONE: Europe/Moscow
+      NOTIFICATION_MODE: local
+      LOG_LEVEL: info
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm install
+      - run: npx prisma migrate deploy
+      - run: npm run db:seed
+      - run: npm run lint
+      - run: npm run typecheck
+      - run: npm run test
+      - run: npm run build
