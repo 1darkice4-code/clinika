@@ -4,6 +4,7 @@ import { Prata } from "next/font/google";
 import Link from "next/link";
 import { SiteHeader } from "@/components/layout/site-header";
 import { BrandMark } from "@/components/ui/brand-mark";
+import { CLINIC_LEGAL } from "@/config/clinic";
 import styles from "./home.module.css";
 
 const wordmark = Prata({
@@ -26,6 +27,15 @@ export function ClinicPage({
   bookingHref?: string;
   children: ReactNode;
 }) {
+  const legalLine = [
+    CLINIC_LEGAL.legalName,
+    CLINIC_LEGAL.inn && `ИНН ${CLINIC_LEGAL.inn}`,
+    CLINIC_LEGAL.ogrn && `ОГРН ${CLINIC_LEGAL.ogrn}`,
+    CLINIC_LEGAL.license && `Лицензия на медицинскую деятельность № ${CLINIC_LEGAL.license}`
+  ]
+    .filter(Boolean)
+    .join(" · ");
+
   return (
     <div data-clinic-page className={`${styles.home} ${wordmark.variable}`}>
       <a className="site-skip-link" href="#clinic-main">К основному содержанию</a>
@@ -56,6 +66,7 @@ export function ClinicPage({
             <Link href="/legal/personal-data-consent">Согласие на обработку данных</Link>
             {email && <a href={`mailto:${email}`}>{email}</a>}
           </div>
+          {legalLine && <p className={styles.footerLegal}>{legalLine}</p>}
         </div>
       </footer>
     </div>

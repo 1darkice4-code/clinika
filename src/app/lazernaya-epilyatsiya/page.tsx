@@ -3,13 +3,25 @@ import { ArrowDown, ArrowUpRight, MapPin, Phone } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { getPublicLaserPricing } from "@/domain/booking/public-catalog";
+import { CLINIC_SITE_URL } from "@/config/clinic";
 import { buildDirectionsUrl } from "@/lib/map";
 import { formatPrice } from "@/lib/utils";
 import { ClinicPage } from "../clinic-page";
 import styles from "../clinic-pages.module.css";
 import home from "../home.module.css";
 import { LaserPriceList } from "@/components/pricing/laser-price-list";
+import {
+  aftercare,
+  contraindications,
+  courseInfo,
+  howItWorks,
+  MEDICAL_WARNING,
+  preparation,
+  questions,
+  whoFits
+} from "./content";
 import laser from "./laser.module.css";
+import { buildLaserStructuredData, serializeJsonLd } from "./structured-data";
 
 const title = "Лазерная эпиляция в Чите";
 const description =
@@ -34,24 +46,6 @@ export const dynamic = "force-dynamic";
 
 const laserBookingUrl = "/booking?booking=laser";
 
-const questions = [
-  {
-    question: "Можно записаться на один сеанс?",
-    answer: "Да. Нажмите на название зоны в прайсе, чтобы открыть форму записи на один сеанс."
-  },
-  {
-    question: "Как подготовиться к первому посещению?",
-    answer: "Перед визитом уточните у администратора, как подготовить выбранную зону и какие ограничения важно обсудить со специалистом."
-  },
-  {
-    question: "Нужно ли заранее покупать курс?",
-    answer: "Можно начать с одного сеанса. Подходящее количество посещений и интервалы между ними можно обсудить со специалистом."
-  },
-  {
-    question: "Как подтвердят запись?",
-    answer: "Выберите зону и свободное время в форме записи. Администратор свяжется с вами, чтобы подтвердить визит."
-  }
-];
 
 export default async function LaserHairRemovalPage() {
   const {
@@ -61,8 +55,20 @@ export default async function LaserHairRemovalPage() {
     startingPrice
   } = await getPublicLaserPricing();
 
+  const structuredData = buildLaserStructuredData({
+    pageUrl: `${CLINIC_SITE_URL}/lazernaya-epilyatsiya`,
+    title,
+    description,
+    phone,
+    address,
+    email,
+    zones: bookableZones,
+    questions
+  });
+
   return (
     <ClinicPage phone={phone} address={address} email={email}>
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: serializeJsonLd(structuredData) }} />
       <main id="clinic-main" tabIndex={-1}>
         <section className={laser.masthead} aria-labelledby="laser-title">
           <div className={`${home.shell} ${laser.mastheadInner}`}>
@@ -70,7 +76,10 @@ export default async function LaserHairRemovalPage() {
               <h1 id="laser-title" className={`${home.title} ${laser.mastheadTitle}`}>
                 {title}
               </h1>
-              <p>Лицо и тело. Один сеанс или курс на 4, 6 или 10 посещений.</p>
+              <p>
+                Диодный лазер для лица и тела. Один сеанс или курс на 4, 6 или 10 посещений — курс выгоднее
+                до 16%.
+              </p>
               <div className={styles.laserSummary}>
                 {startingPrice !== null && <span>Сеанс от {formatPrice(null, startingPrice)}</span>}
                 <a href={buildDirectionsUrl(address)}>
@@ -143,8 +152,67 @@ export default async function LaserHairRemovalPage() {
             </div>
           </section>
 
+          <section className={styles.priceSection} aria-labelledby="laser-how">
+            <div className={laser.textColumns}>
+              <div>
+                <h2 id="laser-how" className={`${home.title} ${styles.sectionTitle}`}>{howItWorks.title}</h2>
+                {howItWorks.paragraphs.map((paragraph) => (
+                  <p key={paragraph} className={laser.bodyText}>{paragraph}</p>
+                ))}
+              </div>
+              <div>
+                <h3 className={laser.subTitle}>{whoFits.title}</h3>
+                <ul className={laser.bulletList}>
+                  {whoFits.items.map((item) => <li key={item}>{item}</li>)}
+                </ul>
+              </div>
+            </div>
+          </section>
+
+          <section className={styles.priceSection} aria-labelledby="laser-course">
+            <h2 id="laser-course" className={`${home.title} ${styles.sectionTitle}`}>{courseInfo.title}</h2>
+            {courseInfo.paragraphs.map((paragraph) => (
+              <p key={paragraph} className={laser.bodyText}>{paragraph}</p>
+            ))}
+            <p className={styles.priceNotice}>{courseInfo.note}</p>
+          </section>
+
+          <section className={styles.priceSection} aria-labelledby="laser-prep">
+            <div className={laser.textColumns}>
+              <div>
+                <h2 id="laser-prep" className={`${home.title} ${styles.sectionTitle}`}>{preparation.title}</h2>
+                <ul className={laser.bulletList}>
+                  {preparation.items.map((item) => <li key={item}>{item}</li>)}
+                </ul>
+                <p className={styles.priceNotice}>{preparation.note}</p>
+              </div>
+              <div>
+                <h2 className={`${home.title} ${styles.sectionTitle}`}>{aftercare.title}</h2>
+                <ul className={laser.bulletList}>
+                  {aftercare.items.map((item) => <li key={item}>{item}</li>)}
+                </ul>
+              </div>
+            </div>
+          </section>
+
+          <section
+            className={`${styles.priceSection} ${laser.contraindications}`}
+            aria-labelledby="laser-contraindications"
+          >
+            <h2 id="laser-contraindications" className={`${home.title} ${styles.sectionTitle}`}>
+              {contraindications.title}
+            </h2>
+            <p className={laser.bodyText}>{contraindications.intro}</p>
+            <ul className={laser.bulletList}>
+              {contraindications.items.map((item) => <li key={item}>{item}</li>)}
+            </ul>
+            <p className={laser.bodyText}>
+              {contraindications.note} <a href={`tel:${phone}`}>{phone}</a>
+            </p>
+          </section>
+
           <section className={styles.priceSection} aria-labelledby="laser-faq">
-            <h2 id="laser-faq" className={`${home.title} ${styles.sectionTitle}`}>Перед первым визитом</h2>
+            <h2 id="laser-faq" className={`${home.title} ${styles.sectionTitle}`}>Частые вопросы</h2>
             <div className={styles.disclosureList}>
               {questions.map(({ question, answer }) => (
                 <details key={question}>
@@ -169,6 +237,8 @@ export default async function LaserHairRemovalPage() {
               </a>
             </div>
           </section>
+
+          <p className={laser.medicalWarning} role="note">{MEDICAL_WARNING}</p>
         </div>
       </main>
     </ClinicPage>

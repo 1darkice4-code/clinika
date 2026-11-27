@@ -85,3 +85,74 @@
     grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   }
 }
+
+.textColumns {
+  display: grid;
+  gap: clamp(1.5rem, 4vw, 3.5rem);
+}
+
+@media (min-width: 900px) {
+  .textColumns {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
+}
+
+.subTitle {
+  font-size: clamp(1.15rem, 2.4vw, 1.5rem);
+  font-weight: 650;
+  color: var(--ink);
+}
+
+.bodyText {
+  max-width: 68ch;
+  margin-top: 0.85rem;
+  color: var(--muted);
+  line-height: 1.65;
+}
+
+.bodyText a {
+  color: var(--brass-ink);
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.bulletList {
+  display: grid;
+  gap: 0.6rem;
+  max-width: 68ch;
+  margin-top: 0.9rem;
+  padding-inline-start: 1.15rem;
+  color: var(--muted);
+  line-height: 1.6;
+  list-style: disc;
+}
+
+.bulletList li::marker {
+  color: var(--brass-ink);
+}
+
+.contraindications {
+  padding: clamp(1.1rem, 3vw, 2rem);
+  border: 1px solid var(--line);
+  border-radius: 1rem;
+  background: var(--white);
+}
+
+.medicalWarning {
+  margin-block: 1.5rem 0.5rem;
+  color: var(--ink);
+  font-size: clamp(1rem, 2.4vw, 1.35rem);
+  font-weight: 700;
+  line-height: 1.35;
+  text-align: center;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+/* На телефоне плавающая кнопка заявки висит в правом нижнем углу:
+   оставляем под неё место, чтобы она не перекрывала кнопки первого экрана. */
+@media (max-width: 767px) {
+  .mastheadCopy > :last-child {
+    padding-inline-end: 4.25rem;
+  }
+}
