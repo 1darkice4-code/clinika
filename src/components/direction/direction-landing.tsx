@@ -77,6 +77,8 @@ export function DirectionLanding({
     questions: content.questions
   });
   const slug = content.path.slice(1);
+  const longestWord = Math.max(...content.title.split(/\s+/).map((word) => word.length));
+  const titleClass = `${home.title} ${direction.mastheadTitle} ${longestWord > 12 ? direction.mastheadTitleLong : ""}`;
 
   return (
     <ClinicPage phone={phone} address={address} email={email} bookingHref={content.bookingHref}>
@@ -85,7 +87,7 @@ export function DirectionLanding({
         <section className={direction.masthead} aria-labelledby={`${slug}-title`}>
           <div className={`${home.shell} ${direction.mastheadInner}`}>
             <div className={direction.mastheadCopy}>
-              <h1 id={`${slug}-title`} className={`${home.title} ${direction.mastheadTitle}`}>
+              <h1 id={`${slug}-title`} className={titleClass}>
                 {content.title}
               </h1>
               <p>{content.lead}</p>
