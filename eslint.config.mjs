@@ -15,6 +15,7 @@ const eslintConfig = [
       "node_modules/**",
       ".tools/**",
       ".backup/**",
+      ".tmp/**",
       "playwright-report/**",
       "test-results/**"
     ]

@@ -1,10 +1,29 @@
 import "dotenv/config";
 import bcrypt from "bcryptjs";
 import { Prisma, PrismaClient } from "@prisma/client/index";
+import { publishLegalDocuments } from "../src/domain/legal/publish-legal-documents";
+import { publishFeaturedReviews } from "../src/domain/review/publish-featured-reviews";
+import { CONSULTATION_SERVICE } from "../src/domain/service/current-price-list";
+import { publishCurrentPriceList } from "../src/domain/service/publish-current-price-list";
+import { publishFeaturedSpecialist } from "../src/domain/specialist/publish-featured-specialist";
 
 const prisma = new PrismaClient();
 
-const devPassword = "DevPassword123!";
+function requiredSeedPassword(name: string): string {
+  const value = process.env[name];
+  if (!value || value.length < 12) {
+    throw new Error(
+      `${name} must be set and contain at least 12 characters before running the seed.`
+    );
+  }
+  return value;
+}
+
+const seedPasswords = {
+  owner: requiredSeedPassword("SEED_OWNER_PASSWORD"),
+  admin: requiredSeedPassword("SEED_ADMIN_PASSWORD"),
+  specialist: requiredSeedPassword("SEED_SPECIALIST_PASSWORD")
+};
 
 function normalizePhone(phone: string): string {
   const digits = phone.replace(/\D/g, "");
@@ -58,7 +77,9 @@ async function seedRoles() {
     {
       code: "ADMIN",
       name: "Администратор клиники",
-      permissions: permissions.filter((permission) => !["users.manage", "roles.manage"].includes(permission))
+      permissions: permissions.filter(
+        (permission) => !["users.manage", "roles.manage"].includes(permission)
+      )
     },
     {
       code: "SPECIALIST",
@@ -95,13 +116,17 @@ async function seedRoles() {
 }
 
 async function seedUsers() {
-  const passwordHash = await bcrypt.hash(devPassword, 12);
+  const [ownerPasswordHash, adminPasswordHash, specialistPasswordHash] = await Promise.all([
+    bcrypt.hash(seedPasswords.owner, 12),
+    bcrypt.hash(seedPasswords.admin, 12),
+    bcrypt.hash(seedPasswords.specialist, 12)
+  ]);
   const owner = await prisma.user.upsert({
     where: { email: "owner@clinika.test" },
-    update: { name: "Владелец Сияние" },
+    update: { name: "Владелец Сияние", passwordHash: ownerPasswordHash },
     create: {
       email: "owner@clinika.test",
-      passwordHash,
+      passwordHash: ownerPasswordHash,
       name: "Владелец Сияние",
       phone: "+79990000001"
     }
@@ -109,10 +134,10 @@ async function seedUsers() {
 
   const admin = await prisma.user.upsert({
     where: { email: "admin@clinika.test" },
-    update: { name: "Администратор Сияние" },
+    update: { name: "Администратор Сияние", passwordHash: adminPasswordHash },
     create: {
       email: "admin@clinika.test",
-      passwordHash,
+      passwordHash: adminPasswordHash,
       name: "Администратор Сияние",
       phone: "+79990000002"
     }
@@ -120,11 +145,11 @@ async function seedUsers() {
 
   const specialistUser = await prisma.user.upsert({
     where: { email: "specialist@clinika.test" },
-    update: { name: "Д-р Анна Смирнова" },
+    update: { name: "Светлана Арутюновна Нерсисян", passwordHash: specialistPasswordHash },
     create: {
       email: "specialist@clinika.test",
-      passwordHash,
-      name: "Д-р Анна Смирнова",
+      passwordHash: specialistPasswordHash,
+      name: "Светлана Арутюновна Нерсисян",
       phone: "+79990000003"
     }
   });
@@ -185,7 +210,31 @@ async function seedSettings() {
   }
 }
 
-async function seedServices() {
+/** Creates the shared laser machine + its weekly hours, returns the resource. */
+async function seedResources() {
+  const resource = await prisma.resource.upsert({
+    where: { slug: "laser-machine" },
+    update: { name: "Лазерный аппарат", isActive: true, sortOrder: 1 },
+    create: { name: "Лазерный аппарат", slug: "laser-machine", isActive: true, sortOrder: 1 }
+  });
+
+  // Аппарат работает Пн–Сб 10:00–20:00 — единая очередь на всех операторов.
+  await prisma.resourceWorkSchedule.deleteMany({ where: { resourceId: resource.id } });
+  for (const weekday of [1, 2, 3, 4, 5, 6]) {
+    await prisma.resourceWorkSchedule.create({
+      data: {
+        resourceId: resource.id,
+        weekday,
+        startsAtLocalTime: "10:00",
+        endsAtLocalTime: "20:00"
+      }
+    });
+  }
+
+  return resource;
+}
+
+async function seedServices(laserResourceId: string) {
   const categories = [
     {
       name: "Косметология",
@@ -201,6 +250,11 @@ async function seedServices() {
       name: "Аппаратная косметология",
       slug: "hardware",
       description: "Аппаратные методики для лица и тела"
+    },
+    {
+      name: "Лазерная эпиляция",
+      slug: "laser-hair-removal",
+      description: "Единая очередь на общий лазерный аппарат"
     }
   ];
 
@@ -219,6 +273,9 @@ async function seedServices() {
     where: { slug: "injections" }
   });
   const hardware = await prisma.serviceCategory.findUniqueOrThrow({ where: { slug: "hardware" } });
+  const laser = await prisma.serviceCategory.findUniqueOrThrow({
+    where: { slug: "laser-hair-removal" }
+  });
 
   const services = [
     {
@@ -263,6 +320,35 @@ async function seedServices() {
       disclaimer: "Не является гарантией конкретного результата.",
       isFeatured: true,
       sortOrder: 3
+    },
+    {
+      categoryId: laser.id,
+      requiresResourceId: laserResourceId,
+      name: "Лазерная эпиляция — подмышки",
+      slug: "laser-underarms",
+      shortDescription: "Быстрая процедура на общем аппарате. Запись в единую очередь.",
+      fullDescription:
+        "Процедура выполняется на общем лазерном аппарате одним из мастеров. Время выбирается из единой очереди аппарата — конкретного мастера подбирает администратор.",
+      priceExact: 1500,
+      durationMinutes: 30,
+      bufferAfterMinutes: 0,
+      contraindications: "Загар, повреждения кожи, беременность и индивидуальные противопоказания.",
+      isFeatured: true,
+      sortOrder: 4
+    },
+    {
+      categoryId: laser.id,
+      requiresResourceId: laserResourceId,
+      name: "Лазерная эпиляция — голени",
+      slug: "laser-shins",
+      shortDescription: "Процедура на общем аппарате. Запись в единую очередь.",
+      fullDescription:
+        "Процедура выполняется на общем лазерном аппарате одним из мастеров. Время выбирается из единой очереди аппарата.",
+      priceExact: 3000,
+      durationMinutes: 60,
+      bufferAfterMinutes: 0,
+      contraindications: "Загар, повреждения кожи, беременность и индивидуальные противопоказания.",
+      sortOrder: 5
     }
   ];
 
@@ -273,100 +359,17 @@ async function seedServices() {
       create: service
     });
   }
+
+  // Keep fresh installs aligned with the public price list used in production.
+  await publishCurrentPriceList(prisma);
 }
 
-async function seedSpecialists(specialistUserId: string) {
-  const photos = await Promise.all(
-    [
-      {
-        storageKey: "seed/smirnova.jpg",
-        publicUrl: "https://images.unsplash.com/photo-1559839734-2b71ea197ec2",
-        originalName: "smirnova.jpg",
-        mimeType: "image/jpeg",
-        sizeBytes: 120000,
-        alt: "Врач косметолог Анна Смирнова"
-      },
-      {
-        storageKey: "seed/orlova.jpg",
-        publicUrl: "https://images.unsplash.com/photo-1594824476967-48c8b964273f",
-        originalName: "orlova.jpg",
-        mimeType: "image/jpeg",
-        sizeBytes: 130000,
-        alt: "Специалист Мария Орлова"
-      },
-      {
-        storageKey: "seed/volkova.jpg",
-        publicUrl: "https://images.unsplash.com/photo-1612349317150-e413f6a5b16d",
-        originalName: "volkova.jpg",
-        mimeType: "image/jpeg",
-        sizeBytes: 125000,
-        alt: "Врач дерматолог Елена Волкова"
-      }
-    ].map((media) =>
-      prisma.mediaFile.upsert({
-        where: { storageKey: media.storageKey },
-        update: media,
-        create: media
-      })
-    )
-  );
-
-  const specialists = [
-    {
-      userId: specialistUserId,
-      firstName: "Анна",
-      lastName: "Смирнова",
-      slug: "anna-smirnova",
-      photoMediaId: photos[0].id,
-      position: "Врач-косметолог",
-      specialization: "Инъекционные и уходовые процедуры",
-      experienceYears: 9,
-      education: "Первый МГМУ им. И.М. Сеченова, дерматовенерология",
-      certificates: "Курсы по биоревитализации, контурной коррекции и аппаратным методикам.",
-      description:
-        "Спокойно ведет консультации, подробно объясняет этапы процедуры и не торопит с решением.",
-      sortOrder: 1
-    },
-    {
-      firstName: "Мария",
-      lastName: "Орлова",
-      slug: "maria-orlova",
-      photoMediaId: photos[1].id,
-      position: "Косметолог-эстетист",
-      specialization: "Уходовые процедуры и диагностика кожи",
-      experienceYears: 6,
-      education: "Медицинский колледж, сестринское дело в косметологии",
-      certificates: "Протоколы профессионального ухода и атравматичных чисток.",
-      description:
-        "Помогает подобрать регулярный уход, чистки и процедуры, после которых коже легче восстановиться.",
-      sortOrder: 2
-    },
-    {
-      firstName: "Елена",
-      lastName: "Волкова",
-      slug: "elena-volkova",
-      photoMediaId: photos[2].id,
-      position: "Дерматолог",
-      specialization: "Аппаратная косметология",
-      experienceYears: 12,
-      education: "РНИМУ им. Н.И. Пирогова, лечебное дело, дерматовенерология",
-      certificates: "Аппаратные технологии, лазерные методики, SMAS-протоколы.",
-      description:
-        "Работает с аппаратными методиками и честно проговаривает, какого результата стоит ждать.",
-      sortOrder: 3
-    }
-  ];
-
-  for (const specialist of specialists) {
-    await prisma.specialist.upsert({
-      where: { slug: specialist.slug },
-      update: specialist,
-      create: specialist
-    });
-  }
-
-  const allSpecialists = await prisma.specialist.findMany();
-  const allServices = await prisma.service.findMany();
+async function seedSpecialists(specialistUserId: string, laserResourceId: string) {
+  const specialist = await publishFeaturedSpecialist(prisma, { userId: specialistUserId });
+  const allSpecialists = [specialist];
+  const allServices = await prisma.service.findMany({
+    where: { slug: CONSULTATION_SERVICE.slug, isActive: true, deletedAt: null }
+  });
 
   for (const specialist of allSpecialists) {
     for (const service of allServices) {
@@ -399,46 +402,21 @@ async function seedSpecialists(specialistUserId: string) {
       });
     }
   }
+
+  // Все мастера — операторы общего лазерного аппарата (единая очередь, назначение в админке).
+  for (const specialist of allSpecialists) {
+    await prisma.resourceOperator.upsert({
+      where: {
+        resourceId_specialistId: { resourceId: laserResourceId, specialistId: specialist.id }
+      },
+      update: { isActive: true },
+      create: { resourceId: laserResourceId, specialistId: specialist.id, isActive: true }
+    });
+  }
 }
 
 async function seedLegalDocuments() {
-  const docs = [
-    {
-      type: "PRIVACY_POLICY" as const,
-      slug: "privacy-policy",
-      title: "Политика конфиденциальности",
-      content: "Технический шаблон политики. Финальный текст должен быть проверен юристом.",
-      version: "2026-01",
-      status: "PUBLISHED" as const,
-      publishedAt: new Date()
-    },
-    {
-      type: "PERSONAL_DATA_CONSENT" as const,
-      slug: "personal-data-consent",
-      title: "Согласие на обработку персональных данных",
-      content: "Технический шаблон согласия. Финальный текст должен быть проверен юристом.",
-      version: "2026-01",
-      status: "PUBLISHED" as const,
-      publishedAt: new Date()
-    },
-    {
-      type: "MARKETING_CONSENT" as const,
-      slug: "marketing-consent",
-      title: "Согласие на рекламные сообщения",
-      content: "Технический шаблон отдельного согласия на коммуникации.",
-      version: "2026-01",
-      status: "PUBLISHED" as const,
-      publishedAt: new Date()
-    }
-  ];
-
-  for (const doc of docs) {
-    await prisma.legalDocument.upsert({
-      where: { type_version: { type: doc.type, version: doc.version } },
-      update: doc,
-      create: doc
-    });
-  }
+  await publishLegalDocuments(prisma);
 }
 
 async function seedContent() {
@@ -543,35 +521,10 @@ async function seedContent() {
 async function seedReviewsAndGallery() {
   const service = await prisma.service.findUniqueOrThrow({ where: { slug: "biorevitalization" } });
   const specialist = await prisma.specialist.findUniqueOrThrow({
-    where: { slug: "anna-smirnova" }
+    where: { slug: "svetlana-nersisyan" }
   });
 
-  if ((await prisma.review.count()) === 0) {
-    await prisma.review.createMany({
-      data: [
-        {
-          clientDisplayName: "Елена К.",
-          text: "Пришла без понимания, какая процедура нужна. Все спокойно объяснили, ничего не навязывали.",
-          rating: 5,
-          source: "Сайт",
-          reviewDate: new Date("2026-02-12"),
-          status: "PUBLISHED",
-          serviceId: service.id,
-          specialistId: specialist.id
-        },
-        {
-          clientDisplayName: "Мария",
-          text: "Записалась через сайт, администратор быстро перезвонил и помог выбрать удобное время.",
-          rating: 5,
-          source: "CRM",
-          reviewDate: new Date("2026-03-04"),
-          status: "PUBLISHED",
-          serviceId: service.id,
-          specialistId: specialist.id
-        }
-      ]
-    });
-  }
+  await publishFeaturedReviews(prisma);
 
   const before = await prisma.mediaFile.upsert({
     where: { storageKey: "seed/before.jpg" },
@@ -649,7 +602,7 @@ async function seedCrm(adminUserId: string) {
     where: { slug: "cosmetologist-consultation" }
   });
   const specialist = await prisma.specialist.findUniqueOrThrow({
-    where: { slug: "anna-smirnova" }
+    where: { slug: "svetlana-nersisyan" }
   });
 
   const lead = await prisma.lead.upsert({
@@ -744,8 +697,9 @@ async function main() {
   await seedRoles();
   const users = await seedUsers();
   await seedSettings();
-  await seedServices();
-  await seedSpecialists(users.specialistUser.id);
+  const laserResource = await seedResources();
+  await seedServices(laserResource.id);
+  await seedSpecialists(users.specialistUser.id, laserResource.id);
   await seedLegalDocuments();
   await seedContent();
   await seedReviewsAndGallery();
@@ -753,10 +707,7 @@ async function main() {
   await seedNotifications();
 
   console.info("Seed completed.");
-  console.info("Development users:");
-  console.info(`owner@clinika.test / ${devPassword}`);
-  console.info(`admin@clinika.test / ${devPassword}`);
-  console.info(`specialist@clinika.test / ${devPassword}`);
+  console.info("Seed users created. Passwords were read from the environment and are not logged.");
 }
 
 main()

@@ -3,6 +3,7 @@ import { permissions } from "@/config/permissions";
 import { getCurrentUser } from "@/domain/auth/auth.service";
 import { assertPermission } from "@/domain/auth/rbac";
 import { writeAudit } from "@/domain/audit/audit.service";
+import { assertResourceExists } from "@/app/api/admin/resources/validate";
 import { ConflictError, NotFoundError } from "@/lib/errors";
 import { jsonError, jsonOk } from "@/lib/http";
 import { prisma } from "@/lib/prisma";
@@ -22,7 +23,8 @@ const schema = z.object({
   durationMinutes: z.number().int().positive().optional(),
   isActive: z.boolean().optional(),
   isFeatured: z.boolean().optional(),
-  sortOrder: z.number().int().optional()
+  sortOrder: z.number().int().optional(),
+  requiresResourceId: z.string().min(1).nullable().optional()
 });
 
 export async function PATCH(request: Request, context: { params: Promise<{ id: string }> }) {
@@ -35,6 +37,7 @@ export async function PATCH(request: Request, context: { params: Promise<{ id: s
       const existing = await prisma.service.findUnique({ where: { slug: input.slug } });
       if (existing && existing.id !== id) throw new ConflictError("Услуга с таким slug уже существует");
     }
+    await assertResourceExists(input.requiresResourceId);
 
     const updated = await prisma.$transaction(async (tx) => {
       const before = await tx.service.findUnique({ where: { id } });

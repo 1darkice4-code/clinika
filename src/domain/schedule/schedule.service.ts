@@ -1,10 +1,5 @@
 import type { Prisma } from "@prisma/client/index";
-import {
-  calculateSlotGrid,
-  STANDARD_SLOT_MINUTES,
-  type GridSlot,
-  type LocalBreak
-} from "@/domain/schedule/availability";
+import { calculateSlotGrid, type GridSlot, type LocalBreak } from "@/domain/schedule/availability";
 import { formatDateInTimezone } from "@/lib/date-time";
 import { ConflictError, NotFoundError } from "@/lib/errors";
 import { prisma } from "@/lib/prisma";
@@ -13,7 +8,8 @@ type ScheduleDb = Prisma.TransactionClient;
 
 type SlotLookupInput = {
   serviceId: string;
-  specialistId: string;
+  /** Omitted for resource-bound services; owner is derived from the service. */
+  specialistId?: string;
   dateFrom: string;
   dateTo: string;
   excludeAppointmentId?: string;
@@ -21,10 +17,17 @@ type SlotLookupInput = {
 
 type SlotAssertInput = {
   serviceId: string;
-  specialistId: string;
+  specialistId?: string;
   startsAtUtc: string;
   excludeAppointmentId?: string;
 };
+
+/** Appointment statuses that occupy a slot (shared by specialist + resource). */
+const ACTIVE_APPOINTMENT_STATUSES = [
+  "PENDING_CONFIRMATION",
+  "CONFIRMED",
+  "ARRIVED"
+] as const;
 
 type ClinicScheduleSettings = {
   timezone: string;
@@ -55,6 +58,9 @@ type ScheduleInputs = {
   busyIntervals: { startsAtUtc: Date; endsAtUtc: Date }[];
   minLeadMinutes: number;
   maxHorizonDays: number;
+  durationMinutes: number;
+  bufferBeforeMinutes: number;
+  bufferAfterMinutes: number;
 };
 
 function parseBreaks(value: Prisma.JsonValue | null): LocalBreak[] {
@@ -77,58 +83,118 @@ function parseBreaks(value: Prisma.JsonValue | null): LocalBreak[] {
 
 /**
  * Loads and validates everything the slot math needs: clinic settings, the
- * service, the specialist's offer, work schedules, exceptions and busy intervals
- * (existing appointments + manual blocks) for the requested date range.
+ * service, work schedules, exceptions and busy intervals for the requested range.
+ *
+ * Two calendar owners are supported. For a specialist-bound service the owner is
+ * one specialist (schedule + only that specialist's appointments/blocks). For a
+ * resource-bound service (e.g. the shared laser machine) the owner is the
+ * resource: the schedule comes from the resource, and busy time is the UNION of
+ * EVERY appointment on that resource regardless of which operator is assigned —
+ * this is what collapses the operators into one queue with capacity one.
  */
 async function loadScheduleInputs(
   input: SlotLookupInput,
   options: SlotLookupOptions = {}
 ): Promise<ScheduleInputs> {
   const db = options.tx ?? prisma;
-  const [settings, service, specialistService] = await Promise.all([
+  const [settings, service] = await Promise.all([
     options.settings ? Promise.resolve(options.settings) : db.clinicSettings.findFirst(),
-    db.service.findFirst({ where: { id: input.serviceId, isActive: true, deletedAt: null } }),
-    db.specialistService.findFirst({
-      where: {
-        specialistId: input.specialistId,
-        serviceId: input.serviceId,
-        isActive: true,
-        specialist: { isActive: true, deletedAt: null }
-      },
-      include: { specialist: true }
-    })
+    db.service.findFirst({ where: { id: input.serviceId, isActive: true, deletedAt: null } })
   ]);
 
   if (!settings) throw new NotFoundError("Настройки клиники не найдены");
   if (!service) throw new NotFoundError("Услуга не найдена");
-  if (!specialistService) throw new ConflictError("Специалист не оказывает выбранную услугу");
 
   const dateFromUtc = new Date(`${input.dateFrom}T00:00:00.000Z`);
   const dateToUtc = new Date(`${input.dateTo}T23:59:59.999Z`);
 
+  const base = {
+    timezone: settings.timezone,
+    minLeadMinutes: settings.bookingMinLeadMinutes,
+    maxHorizonDays: settings.bookingMaxHorizonDays,
+    bufferBeforeMinutes: service.bufferBeforeMinutes,
+    bufferAfterMinutes: service.bufferAfterMinutes
+  };
+
+  if (service.requiresResourceId) {
+    const resourceId = service.requiresResourceId;
+    const resource = await db.resource.findFirst({
+      where: { id: resourceId, isActive: true, deletedAt: null }
+    });
+    if (!resource) throw new ConflictError("Аппарат для услуги недоступен");
+
+    const [workSchedules, appointments, blocks] = await Promise.all([
+      db.resourceWorkSchedule.findMany({ where: { resourceId, isActive: true } }),
+      db.appointment.findMany({
+        where: {
+          ...(input.excludeAppointmentId ? { id: { not: input.excludeAppointmentId } } : {}),
+          resourceId,
+          deletedAt: null,
+          status: { in: [...ACTIVE_APPOINTMENT_STATUSES] },
+          startsAtUtc: { lte: dateToUtc },
+          endsAtUtc: { gte: dateFromUtc }
+        }
+      }),
+      db.resourceTimeBlock.findMany({
+        where: { resourceId, startsAtUtc: { lte: dateToUtc }, endsAtUtc: { gte: dateFromUtc } }
+      })
+    ]);
+
+    return {
+      ...base,
+      durationMinutes: service.durationMinutes,
+      workSchedules: workSchedules.map((schedule) => ({
+        weekday: schedule.weekday,
+        startsAtLocalTime: schedule.startsAtLocalTime,
+        endsAtLocalTime: schedule.endsAtLocalTime,
+        breaks: parseBreaks(schedule.breaksJson)
+      })),
+      exceptions: [],
+      busyIntervals: [
+        ...appointments.map((appointment) => ({
+          startsAtUtc: appointment.startsAtUtc,
+          endsAtUtc: appointment.endsAtUtc
+        })),
+        ...blocks.map((block) => ({ startsAtUtc: block.startsAtUtc, endsAtUtc: block.endsAtUtc }))
+      ]
+    };
+  }
+
+  if (!input.specialistId) throw new ConflictError("Специалист не указан");
+  const specialistId = input.specialistId;
+  const specialistService = await db.specialistService.findFirst({
+    where: {
+      specialistId,
+      serviceId: input.serviceId,
+      isActive: true,
+      specialist: { isActive: true, deletedAt: null }
+    }
+  });
+  if (!specialistService) throw new ConflictError("Специалист не оказывает выбранную услугу");
+
   const [workSchedules, exceptions, appointments, blocks] = await Promise.all([
     db.workSchedule.findMany({
-      where: { specialistId: input.specialistId, isActive: true }
+      where: { specialistId, isActive: true }
     }),
     db.scheduleException.findMany({
       where: {
-        specialistId: input.specialistId,
+        specialistId,
         date: { gte: dateFromUtc, lte: dateToUtc }
       }
     }),
     db.appointment.findMany({
       where: {
         ...(input.excludeAppointmentId ? { id: { not: input.excludeAppointmentId } } : {}),
-        specialistId: input.specialistId,
+        specialistId,
         deletedAt: null,
-        status: { in: ["PENDING_CONFIRMATION", "CONFIRMED", "ARRIVED"] },
+        status: { in: [...ACTIVE_APPOINTMENT_STATUSES] },
         startsAtUtc: { lte: dateToUtc },
         endsAtUtc: { gte: dateFromUtc }
       }
     }),
     db.timeBlock.findMany({
       where: {
-        specialistId: input.specialistId,
+        specialistId,
         startsAtUtc: { lte: dateToUtc },
         endsAtUtc: { gte: dateFromUtc }
       }
@@ -136,7 +202,8 @@ async function loadScheduleInputs(
   ]);
 
   return {
-    timezone: settings.timezone,
+    ...base,
+    durationMinutes: specialistService.customDurationMinutes ?? service.durationMinutes,
     workSchedules: workSchedules.map((schedule) => ({
       weekday: schedule.weekday,
       startsAtLocalTime: schedule.startsAtLocalTime,
@@ -158,16 +225,14 @@ async function loadScheduleInputs(
         startsAtUtc: block.startsAtUtc,
         endsAtUtc: block.endsAtUtc
       }))
-    ],
-    minLeadMinutes: settings.bookingMinLeadMinutes,
-    maxHorizonDays: settings.bookingMaxHorizonDays
+    ]
   };
 }
 
 /**
- * Full one-hour slot grid for the requested range, including taken slots marked
- * `available: false`. This is the single source of truth for both the public
- * booking UI and server-side validation.
+ * Full slot grid (slot length = service duration) for the requested range,
+ * including taken slots marked `available: false`. Single source of truth for
+ * both the public booking UI and server-side validation.
  */
 export async function getSlotGrid(
   input: SlotLookupInput,
@@ -183,7 +248,9 @@ export async function getSlotGrid(
     busyIntervals: data.busyIntervals,
     minLeadMinutes: data.minLeadMinutes,
     maxHorizonDays: data.maxHorizonDays,
-    slotMinutes: STANDARD_SLOT_MINUTES,
+    durationMinutes: data.durationMinutes,
+    bufferBeforeMinutes: data.bufferBeforeMinutes,
+    bufferAfterMinutes: data.bufferAfterMinutes,
     now: options.now
   });
 
@@ -191,9 +258,9 @@ export async function getSlotGrid(
 }
 
 /**
- * Validates that a chosen start matches an available one-hour slot and returns
- * the resolved slot (start, end = start + one hour, clinic timezone). Throws if
- * the slot was taken in the meantime.
+ * Validates that a chosen start matches an available slot and returns the
+ * resolved slot (start, end = start + service duration, clinic timezone). Throws
+ * if the slot was taken in the meantime.
  */
 export async function getAvailableSlotOrThrow(input: SlotAssertInput, options: SlotLookupOptions = {}) {
   const db = options.tx ?? prisma;

@@ -7,6 +7,7 @@ const consentSchema = z.object({
     .boolean()
     .refine((value) => value, "Необходимо согласие на обработку персональных данных"),
   marketingConsentAccepted: z.boolean().optional().default(false),
+  marketingConsentVersion: z.string().min(1).max(64).optional(),
   legalDocumentVersion: z.string().min(1).default("2026-01")
 });
 
@@ -30,7 +31,9 @@ export const createLeadSchema = z
 export const createAppointmentSchema = z
   .object({
     serviceId: z.string().min(1),
-    specialistId: z.string().min(1),
+    // Optional: resource-bound services (laser) are booked into a single queue
+    // with no operator chosen; the server derives the owner from the service.
+    specialistId: z.string().min(1).optional(),
     startsAtUtc: z.string().datetime(),
     name: clientNameSchema,
     phone: phoneSchema,

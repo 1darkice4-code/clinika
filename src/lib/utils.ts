@@ -6,7 +6,8 @@ export function cn(...inputs: ClassValue[]) {
 }
 
 export function formatPrice(priceFrom?: number | null, priceExact?: number | null): string {
-  if (priceExact) return `${priceExact.toLocaleString("ru-RU")} ₽`;
-  if (priceFrom) return `от ${priceFrom.toLocaleString("ru-RU")} ₽`;
-  return "по консультации";
+  if (priceExact === 0) return "Бесплатно";
+  if (priceExact != null) return `${priceExact.toLocaleString("ru-RU")} ₽`;
+  if (priceFrom != null) return `от ${priceFrom.toLocaleString("ru-RU")} ₽`;
+  return "Цена по запросу";
 }

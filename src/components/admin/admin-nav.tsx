@@ -143,7 +143,7 @@ export function AdminNav({
         <div className="border-y py-3">
           <UserBlock userName={userName} roles={roles} />
         </div>
-        <div className="flex-1 overflow-y-auto">
+        <div className="scrollbar-hidden flex-1 overflow-y-auto">
           <NavGroups groups={visibleGroups} pathname={pathname} />
         </div>
         <div className="flex items-center gap-2 border-t p-3">
@@ -180,7 +180,7 @@ export function AdminNav({
             onClick={() => setOpen(false)}
             className="absolute inset-0 bg-black/40"
           />
-          <div className="absolute inset-y-0 left-0 flex w-72 max-w-[85%] flex-col overflow-y-auto border-r bg-card shadow-xl">
+          <div className="scrollbar-hidden absolute inset-y-0 left-0 flex w-72 max-w-[85%] flex-col overflow-y-auto border-r bg-card shadow-xl">
             <div className="flex items-center justify-between px-5 py-4">
               <Brand />
               <button
@@ -195,7 +195,7 @@ export function AdminNav({
             <div className="border-y py-3">
               <UserBlock userName={userName} roles={roles} />
             </div>
-            <div className="flex-1 overflow-y-auto">
+            <div className="scrollbar-hidden flex-1 overflow-y-auto">
               <NavGroups groups={visibleGroups} pathname={pathname} onNavigate={() => setOpen(false)} />
             </div>
             <div className="border-t p-3">

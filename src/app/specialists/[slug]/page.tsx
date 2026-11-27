@@ -22,7 +22,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   });
   if (!specialist) return {};
   return {
-    title: specialist.seoMetadata?.title ?? `${specialist.firstName} ${specialist.lastName}`,
+    title: specialist.seoMetadata?.title ?? `${specialist.firstName} ${specialist.lastName}`.trim(),
     description: specialist.seoMetadata?.description ?? specialist.description,
     alternates: { canonical: `/specialists/${specialist.slug}` }
   };
@@ -40,6 +40,8 @@ export default async function SpecialistPage({ params }: PageProps) {
 
   if (!specialist) notFound();
 
+  const name = `${specialist.firstName} ${specialist.lastName}`.trim();
+
   return (
     <>
       <SiteHeader />
@@ -49,7 +51,7 @@ export default async function SpecialistPage({ params }: PageProps) {
             {specialist.photo?.publicUrl && (
               <Image
                 src={specialist.photo.publicUrl}
-                alt={specialist.photo.alt ?? `${specialist.firstName} ${specialist.lastName}`}
+                alt={specialist.photo.alt ?? name}
                 fill
                 sizes="320px"
                 className="object-cover"
@@ -59,29 +61,36 @@ export default async function SpecialistPage({ params }: PageProps) {
           <div>
             <Badge>{specialist.position}</Badge>
             <h1 className="mt-4 text-4xl font-semibold">
-              {specialist.firstName} {specialist.lastName}
+              {name}
             </h1>
             <p className="mt-3 text-primary">{specialist.specialization}</p>
             <p className="mt-5 text-muted-foreground">{specialist.description}</p>
-            <p className="mt-5 text-sm text-muted-foreground">Опыт: {specialist.experienceYears} лет</p>
-            <Link
-              href="/#booking"
-              className="mt-8 inline-flex h-11 items-center rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground"
-            >
-              Записаться
-            </Link>
+            <p className="mt-5 text-sm text-muted-foreground">
+              Опыт: {specialist.experienceYears} лет{specialist.slug === "nina-andreevna" && " в эстетических процедурах"}
+            </p>
+            <p className="mt-3 text-sm text-muted-foreground">Образование: {specialist.education}</p>
+            {specialist.services.length > 0 && (
+              <Link
+                href="/booking"
+                className="mt-8 inline-flex h-11 items-center rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground"
+              >
+                Записаться
+              </Link>
+            )}
           </div>
         </div>
-        <Card className="mt-10 p-6">
-          <h2 className="text-2xl font-semibold">Услуги специалиста</h2>
-          <div className="mt-4 grid gap-3">
-            {specialist.services.map((item) => (
-              <Link key={item.serviceId} href={`/services/${item.service.slug}`} className="rounded-md border p-4">
-                {item.service.name}
-              </Link>
-            ))}
-          </div>
-        </Card>
+        {specialist.services.length > 0 && (
+          <Card className="mt-10 p-6">
+            <h2 className="text-2xl font-semibold">Услуги специалиста</h2>
+            <div className="mt-4 grid gap-3">
+              {specialist.services.map((item) => (
+                <Link key={item.serviceId} href={`/services/${item.service.slug}`} className="rounded-md border p-4">
+                  {item.service.name}
+                </Link>
+              ))}
+            </div>
+          </Card>
+        )}
       </main>
       <SiteFooter />
     </>

@@ -2,10 +2,12 @@
 node_modules
 coverage
 playwright-report
+.playwright-cli/
 test-results
 .env
-.env.local
-.env.*.local
+.env.*
+!.env.example
+.secrets/
 *.log
 uploads
 dist

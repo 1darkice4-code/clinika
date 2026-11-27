@@ -29,19 +29,34 @@ export default async function SchedulePage() {
   assertPermission(user, permissions.scheduleRead);
   const canWrite = Boolean(user?.permissions.includes(permissions.scheduleWrite));
 
-  const [settings, specialists] = await Promise.all([
+  const [settings, specialists, resources] = await Promise.all([
     prisma.clinicSettings.findFirst(),
     prisma.specialist.findMany({
       include: { workSchedules: { orderBy: [{ weekday: "asc" }, { startsAtLocalTime: "asc" }] } },
       orderBy: { sortOrder: "asc" }
+    }),
+    prisma.resource.findMany({
+      where: { deletedAt: null },
+      include: { workSchedules: { orderBy: [{ weekday: "asc" }, { startsAtLocalTime: "asc" }] } },
+      orderBy: [{ sortOrder: "asc" }, { name: "asc" }]
     })
   ]);
 
   const managerData = specialists.map((specialist) => ({
     id: specialist.id,
-    firstName: specialist.firstName,
-    lastName: specialist.lastName,
+    name: `${specialist.firstName} ${specialist.lastName}`,
     workSchedules: specialist.workSchedules.map((schedule) => ({
+      weekday: schedule.weekday,
+      startsAtLocalTime: schedule.startsAtLocalTime,
+      endsAtLocalTime: schedule.endsAtLocalTime,
+      breaksJson: normalizeBreaks(schedule.breaksJson)
+    }))
+  }));
+
+  const resourceManagerData = resources.map((resource) => ({
+    id: resource.id,
+    name: resource.name,
+    workSchedules: resource.workSchedules.map((schedule) => ({
       weekday: schedule.weekday,
       startsAtLocalTime: schedule.startsAtLocalTime,
       endsAtLocalTime: schedule.endsAtLocalTime,
@@ -58,8 +73,21 @@ export default async function SchedulePage() {
       />
 
       {canWrite ? (
-        <div className="mt-6">
-          <ScheduleManager specialists={managerData} timezone={settings?.timezone ?? "Asia/Chita"} />
+        <div className="mt-6 grid gap-8">
+          <ScheduleManager owners={managerData} timezone={settings?.timezone ?? "Asia/Chita"} />
+          {resourceManagerData.length > 0 && (
+            <div className="grid gap-3">
+              <h2 className="text-lg font-semibold">Аппараты</h2>
+              <p className="text-sm text-muted-foreground">
+                Часы работы общего оборудования (лазер и т.п.). В эти часы формируется единая очередь.
+              </p>
+              <ScheduleManager
+                owners={resourceManagerData}
+                ownerType="resource"
+                timezone={settings?.timezone ?? "Asia/Chita"}
+              />
+            </div>
+          )}
         </div>
       ) : (
         <div className="mt-6 grid gap-4">

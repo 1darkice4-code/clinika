@@ -59,7 +59,7 @@ export default async function ServicePage({ params }: PageProps) {
           </Card>
           <Card className="p-5">
             <p className="text-sm text-muted-foreground">Запись</p>
-            <Link href="/#booking" className="mt-2 inline-flex text-primary">
+            <Link href="/booking" className="mt-2 inline-flex text-primary">
               Выбрать время
             </Link>
           </Card>

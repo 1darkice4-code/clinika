@@ -12,6 +12,7 @@ dist
 .env
 .env.local
 .env.*.local
+.secrets
 
 # Large local-only assets and bundled toolchain
 .tmp

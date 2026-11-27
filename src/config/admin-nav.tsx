@@ -12,7 +12,8 @@ import {
   Sparkles,
   Stethoscope,
   Users,
-  WandSparkles
+  WandSparkles,
+  Zap
 } from "lucide-react";
 import { permissions, type PermissionCode } from "@/config/permissions";
 
@@ -48,6 +49,7 @@ export const adminNavGroups: AdminNavGroup[] = [
     items: [
       { href: "/admin/services", label: "Услуги", icon: Sparkles, permission: permissions.contentRead },
       { href: "/admin/specialists", label: "Специалисты", icon: Stethoscope, permission: permissions.contentRead },
+      { href: "/admin/resources", label: "Аппараты", icon: Zap, permission: permissions.contentRead },
       { href: "/admin/schedule", label: "Расписание", icon: CalendarClock, permission: permissions.scheduleRead },
       { href: "/admin/content", label: "Контент", icon: WandSparkles, permission: permissions.contentRead }
     ]

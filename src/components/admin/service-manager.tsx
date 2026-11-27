@@ -32,13 +32,20 @@ type Service = {
   isActive: boolean;
   isFeatured: boolean;
   sortOrder: number;
+  requiresResourceId: string | null;
   category: Category;
   specialistServices: unknown[];
+};
+
+type ResourceOption = {
+  id: string;
+  name: string;
 };
 
 type ServiceManagerProps = {
   categories: Category[];
   services: Service[];
+  resources: ResourceOption[];
 };
 
 function optionalNumber(value: FormDataEntryValue | null) {
@@ -62,7 +69,8 @@ function servicePayload(form: FormData) {
     disclaimer: String(form.get("disclaimer") ?? "") || null,
     isActive: form.get("isActive") === "on",
     isFeatured: form.get("isFeatured") === "on",
-    sortOrder: Number(form.get("sortOrder") || 0)
+    sortOrder: Number(form.get("sortOrder") || 0),
+    requiresResourceId: String(form.get("requiresResourceId") ?? "") || null
   };
 }
 
@@ -76,7 +84,15 @@ async function send(endpoint: string, method: "POST" | "PATCH", payload: Record<
   if (!response.ok) throw new Error(data.error ?? "Не удалось сохранить");
 }
 
-function ServiceFields({ categories, service }: { categories: Category[]; service?: Service }) {
+function ServiceFields({
+  categories,
+  resources,
+  service
+}: {
+  categories: Category[];
+  resources: ResourceOption[];
+  service?: Service;
+}) {
   return (
     <div className="grid gap-3">
       <div className="grid gap-3 md:grid-cols-3">
@@ -152,6 +168,27 @@ function ServiceFields({ categories, service }: { categories: Category[]; servic
           aria-label="Буфер после, мин"
         />
       </div>
+      <div className="grid gap-2 md:grid-cols-2 md:items-start">
+        <label className="flex flex-col gap-1 text-sm">
+          <span className="font-medium">Общий ресурс (аппарат)</span>
+          <Select
+            name="requiresResourceId"
+            aria-label="Общий ресурс"
+            defaultValue={service?.requiresResourceId ?? ""}
+          >
+            <option value="">Не требуется — запись к специалисту</option>
+            {resources.map((resource) => (
+              <option key={resource.id} value={resource.id}>
+                {resource.name}
+              </option>
+            ))}
+          </Select>
+        </label>
+        <p className="text-xs text-muted-foreground md:pt-6">
+          Если выбрать аппарат, услуга записывается в единую очередь ресурса (ёмкость 1) без выбора
+          мастера на сайте. Оператор назначается в записи.
+        </p>
+      </div>
       <div className="grid gap-3 md:grid-cols-2">
         <Textarea
           name="contraindications"
@@ -187,7 +224,7 @@ function ServiceFields({ categories, service }: { categories: Category[]; servic
   );
 }
 
-export function ServiceManager({ categories, services }: ServiceManagerProps) {
+export function ServiceManager({ categories, services, resources }: ServiceManagerProps) {
   const router = useRouter();
   const [message, setMessage] = useState<string | null>(null);
   const [pending, setPending] = useState<string | null>(null);
@@ -217,7 +254,7 @@ export function ServiceManager({ categories, services }: ServiceManagerProps) {
       <Card className="p-5">
         <h2 className="text-xl font-semibold">Новая услуга</h2>
         <form className="mt-4 grid gap-4" onSubmit={(event) => submit(event)}>
-          <ServiceFields categories={categories} />
+          <ServiceFields categories={categories} resources={resources} />
           <Button type="submit" disabled={pending === "new"} className="w-fit">
             <Plus className="h-4 w-4" />
             Добавить услугу
@@ -246,7 +283,7 @@ export function ServiceManager({ categories, services }: ServiceManagerProps) {
             <details className="mt-4">
               <summary className="cursor-pointer text-sm font-medium text-primary">Редактировать</summary>
               <form className="mt-4 grid gap-4" onSubmit={(event) => submit(event, service.id)}>
-                <ServiceFields categories={categories} service={service} />
+                <ServiceFields categories={categories} resources={resources} service={service} />
                 <Button type="submit" disabled={pending === service.id} className="w-fit">
                   <Save className="h-4 w-4" />
                   Сохранить

@@ -27,6 +27,9 @@ jobs:
       DATABASE_URL: postgresql://clinika:clinika_password@localhost:5432/clinika?schema=public
       APP_URL: http://localhost:3000
       AUTH_SECRET: ci-secret-with-at-least-32-characters
+      SEED_OWNER_PASSWORD: ci-owner-password-not-for-production
+      SEED_ADMIN_PASSWORD: ci-admin-password-not-for-production
+      SEED_SPECIALIST_PASSWORD: ci-specialist-password-not-for-production
       CLINIC_TIMEZONE: Europe/Moscow
       NOTIFICATION_MODE: local
       LOG_LEVEL: info

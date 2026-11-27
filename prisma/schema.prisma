@@ -374,6 +374,7 @@ model ServiceCategory {
 model Service {
   id                  String    @id @default(cuid())
   categoryId          String
+  requiresResourceId  String?
   name                String
   slug                String    @unique
   shortDescription    String
@@ -395,6 +396,7 @@ model Service {
   deletedAt           DateTime?
 
   category           ServiceCategory     @relation(fields: [categoryId], references: [id])
+  requiresResource   Resource?           @relation(fields: [requiresResourceId], references: [id], onDelete: SetNull)
   seoMetadata        SeoMetadata?        @relation(fields: [seoMetadataId], references: [id])
   specialistServices SpecialistService[]
   leads              Lead[]
@@ -404,6 +406,7 @@ model Service {
 
   @@index([categoryId, isActive])
   @@index([isFeatured, sortOrder])
+  @@index([requiresResourceId])
 }
 
 model Specialist {
@@ -433,6 +436,7 @@ model Specialist {
   workSchedules      WorkSchedule[]
   scheduleExceptions ScheduleException[]
   timeBlocks         TimeBlock[]
+  resourceOperators  ResourceOperator[]
   leads              Lead[]
   appointments       Appointment[]
   reviews            Review[]
@@ -501,6 +505,72 @@ model TimeBlock {
   @@index([specialistId, startsAtUtc, endsAtUtc])
 }
 
+/// Shared physical resource with capacity 1 (e.g. the laser machine). Several
+/// operators take turns on it, but only one appointment can run at a time — so
+/// laser bookings queue against the resource, not the individual operator.
+model Resource {
+  id        String    @id @default(cuid())
+  name      String
+  slug      String    @unique
+  isActive  Boolean   @default(true)
+  sortOrder Int       @default(0)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  operators     ResourceOperator[]
+  workSchedules ResourceWorkSchedule[]
+  timeBlocks    ResourceTimeBlock[]
+  services      Service[]
+  appointments  Appointment[]
+}
+
+/// Which specialists are allowed to operate a resource. Feeds the admin
+/// "assign operator" dropdown; does not affect capacity.
+model ResourceOperator {
+  resourceId   String
+  specialistId String
+  isActive     Boolean @default(true)
+
+  resource   Resource   @relation(fields: [resourceId], references: [id], onDelete: Cascade)
+  specialist Specialist @relation(fields: [specialistId], references: [id], onDelete: Cascade)
+
+  @@id([resourceId, specialistId])
+}
+
+model ResourceWorkSchedule {
+  id                String    @id @default(cuid())
+  resourceId        String
+  weekday           Int
+  startsAtLocalTime String
+  endsAtLocalTime   String
+  breaksJson        Json?
+  isActive          Boolean   @default(true)
+  validFrom         DateTime?
+  validTo           DateTime?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  resource Resource @relation(fields: [resourceId], references: [id], onDelete: Cascade)
+
+  @@index([resourceId, weekday, isActive])
+}
+
+model ResourceTimeBlock {
+  id              String   @id @default(cuid())
+  resourceId      String
+  startsAtUtc     DateTime
+  endsAtUtc       DateTime
+  reason          String
+  createdByUserId String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  resource Resource @relation(fields: [resourceId], references: [id], onDelete: Cascade)
+
+  @@index([resourceId, startsAtUtc, endsAtUtc])
+}
+
 model Lead {
   id                    String     @id @default(cuid())
   publicNumber          String     @unique
@@ -557,7 +627,8 @@ model Appointment {
   publicNumber       String                    @unique
   clientId           String
   serviceId          String
-  specialistId       String
+  specialistId       String?
+  resourceId         String?
   leadId             String?
   startsAtUtc        DateTime
   endsAtUtc          DateTime
@@ -580,7 +651,8 @@ model Appointment {
 
   client        Client                     @relation(fields: [clientId], references: [id])
   service       Service                    @relation(fields: [serviceId], references: [id])
-  specialist    Specialist                 @relation(fields: [specialistId], references: [id])
+  specialist    Specialist?                @relation(fields: [specialistId], references: [id])
+  resource      Resource?                  @relation(fields: [resourceId], references: [id])
   lead          Lead?                      @relation(fields: [leadId], references: [id])
   attribution   UTMAttribution?            @relation(fields: [attributionId], references: [id])
   createdByUser User?                      @relation("CreatedAppointments", fields: [createdByUserId], references: [id])
@@ -590,6 +662,7 @@ model Appointment {
 
   @@index([clientId])
   @@index([specialistId, startsAtUtc])
+  @@index([resourceId, startsAtUtc])
   @@index([status, startsAtUtc])
   @@index([serviceId])
   @@index([attributionId])
@@ -854,10 +927,33 @@ model ClinicSettings {
   timezone              String           @default("Asia/Chita")
   mapEmbedUrl           String?
   notificationMode      NotificationMode @default(LOCAL)
+  telegramBotTokenEncrypted String?
+  telegramAdminChatId      String?
+  telegramNotificationsEnabled Boolean @default(false)
   bookingMinLeadMinutes Int              @default(120)
   bookingMaxHorizonDays Int              @default(45)
   createdAt             DateTime         @default(now())
   updatedAt             DateTime         @updatedAt
+}
+
+model MessengerBot {
+  platform          String   @id
+  username          String
+  tokenEncrypted    String
+  webhookSecretHash String
+  connectedAt       DateTime?
+  showOnSite        Boolean  @default(false)
+}
+
+model MessengerBookingSession {
+  id               String    @id
+  stateEncrypted   String?
+  pendingEncrypted String?
+  processedEvents  String[]  @default([])
+  leaseUntil       DateTime?
+  updatedAt        DateTime  @updatedAt
+
+  @@index([updatedAt])
 }
 
 model AuditLog {

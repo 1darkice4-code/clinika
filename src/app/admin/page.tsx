@@ -13,6 +13,7 @@ import {
 import { permissions } from "@/config/permissions";
 import { assertPermission, hasPermission } from "@/domain/auth/rbac";
 import { getCurrentUser } from "@/domain/auth/auth.service";
+import { performerLabel } from "@/domain/appointment/appointment-labels";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { PageHeader } from "@/components/admin/page-header";
@@ -176,7 +177,7 @@ export default async function AdminDashboardPage() {
             status: { notIn: ["CANCELLED_BY_CLIENT", "CANCELLED_BY_CLINIC"] }
           },
           orderBy: { startsAtUtc: "asc" },
-          include: { client: true, service: true, specialist: true }
+          include: { client: true, service: true, specialist: true, resource: true }
         })
       : Promise.resolve([]),
     canReadAppointments
@@ -189,7 +190,7 @@ export default async function AdminDashboardPage() {
           },
           orderBy: { startsAtUtc: "asc" },
           take: 6,
-          include: { client: true, service: true, specialist: true }
+          include: { client: true, service: true, specialist: true, resource: true }
         })
       : Promise.resolve([]),
     canReadAppointments || canReadLeads
@@ -346,9 +347,9 @@ export default async function AdminDashboardPage() {
                         </a>
                       </div>
                       <div>
-                        <p className="text-xs uppercase tracking-wide text-muted-foreground">Специалист</p>
+                        <p className="text-xs uppercase tracking-wide text-muted-foreground">Исполнитель</p>
                         <p className="mt-1 font-medium">
-                          {appointment.specialist.firstName} {appointment.specialist.lastName}
+                          {performerLabel(appointment)}
                         </p>
                       </div>
                     </div>
@@ -443,8 +444,7 @@ export default async function AdminDashboardPage() {
                         </Badge>
                       </div>
                       <p className="mt-3 text-sm">
-                        {appointment.client.firstName} · {appointment.specialist.firstName}{" "}
-                        {appointment.specialist.lastName}
+                        {appointment.client.firstName} · {performerLabel(appointment)}
                       </p>
                     </CardContent>
                   </Card>

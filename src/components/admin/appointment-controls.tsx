@@ -29,11 +29,19 @@ const reschedulableStatuses: AppointmentStatus[] = [
   "RESCHEDULED"
 ];
 
+type OperatorOption = {
+  id: string;
+  label: string;
+};
+
 type AppointmentControlsProps = {
   appointmentId: string;
   currentStatus: AppointmentStatus;
   startsAtUtc: string;
   timezone: string;
+  /** Provided only for resource (laser) appointments — the machine's operators. */
+  operatorOptions?: OperatorOption[];
+  currentOperatorId?: string | null;
 };
 
 function getZonedPart(date: Date, timezone: string, type: Intl.DateTimeFormatPartTypes) {
@@ -74,13 +82,40 @@ async function postJson(endpoint: string, payload: Record<string, unknown>) {
   if (!response.ok) throw new Error(data.error ?? "Не удалось сохранить изменения");
 }
 
-export function AppointmentControls({ appointmentId, currentStatus, startsAtUtc, timezone }: AppointmentControlsProps) {
+export function AppointmentControls({
+  appointmentId,
+  currentStatus,
+  startsAtUtc,
+  timezone,
+  operatorOptions,
+  currentOperatorId
+}: AppointmentControlsProps) {
   const router = useRouter();
   const [pending, setPending] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const nextStatuses = appointmentTransitions[currentStatus];
   const canReschedule = reschedulableStatuses.includes(currentStatus);
+  const canAssignOperator = Boolean(operatorOptions);
   const defaults = getClinicDefaults(startsAtUtc, timezone);
+
+  async function submitOperator(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const form = new FormData(event.currentTarget);
+    setPending(true);
+    setMessage(null);
+
+    try {
+      await postJson(`/api/admin/appointments/${appointmentId}/operator`, {
+        specialistId: String(form.get("specialistId") ?? "") || null
+      });
+      setMessage("Оператор обновлен");
+      router.refresh();
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "Не удалось назначить оператора");
+    } finally {
+      setPending(false);
+    }
+  }
 
   async function submitStatus(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -124,11 +159,41 @@ export function AppointmentControls({ appointmentId, currentStatus, startsAtUtc,
     }
   }
 
-  const hasActions = nextStatuses.length > 0 || canReschedule;
+  const hasActions = nextStatuses.length > 0 || canReschedule || canAssignOperator;
 
   return (
     <div className="grid w-64 gap-3">
       {!hasActions && <span className="text-xs text-muted-foreground">Нет доступных действий</span>}
+
+      {canAssignOperator && (
+        <form className="grid gap-2" onSubmit={submitOperator}>
+          <label className="text-xs font-medium text-muted-foreground">Оператор (аппарат)</label>
+          <div className="flex gap-2">
+            <Select
+              name="specialistId"
+              aria-label="Оператор записи"
+              defaultValue={currentOperatorId ?? ""}
+              className="min-w-0 flex-1"
+            >
+              <option value="">— не назначен —</option>
+              {operatorOptions?.map((operator) => (
+                <option key={operator.id} value={operator.id}>
+                  {operator.label}
+                </option>
+              ))}
+            </Select>
+            <Button
+              type="submit"
+              size="icon"
+              disabled={pending}
+              aria-label="Сохранить оператора"
+              data-testid="appointment-operator-save"
+            >
+              <Save className="h-4 w-4" />
+            </Button>
+          </div>
+        </form>
+      )}
 
       {nextStatuses.length > 0 && (
         <form className="grid gap-2" onSubmit={submitStatus}>

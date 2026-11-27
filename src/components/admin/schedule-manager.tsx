@@ -17,16 +17,17 @@ type ScheduleRow = {
   breaksJson: { startsAtLocalTime: string; endsAtLocalTime: string }[];
 };
 
-type SpecialistSchedule = {
+type OwnerSchedule = {
   id: string;
-  firstName: string;
-  lastName: string;
+  name: string;
   workSchedules: ScheduleRow[];
 };
 
 type ScheduleManagerProps = {
-  specialists: SpecialistSchedule[];
+  owners: OwnerSchedule[];
   timezone: string;
+  /** Which calendar the forms write to: a specialist or a shared resource. */
+  ownerType?: "specialist" | "resource";
 };
 
 const days = [
@@ -57,14 +58,15 @@ async function send(endpoint: string, method: "POST" | "PUT", payload: Record<st
   if (!response.ok) throw new Error(data.error ?? "Не удалось сохранить изменения");
 }
 
-export function ScheduleManager({ specialists, timezone }: ScheduleManagerProps) {
+export function ScheduleManager({ owners, timezone, ownerType = "specialist" }: ScheduleManagerProps) {
   const router = useRouter();
   const [pending, setPending] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   // Tracks each day's checkbox so disabled days visibly dim and can't be edited.
   const [enabledDays, setEnabledDays] = useState<Record<string, boolean>>({});
+  const ownerKey = ownerType === "resource" ? "resourceId" : "specialistId";
 
-  async function submitSchedules(event: FormEvent<HTMLFormElement>, specialistId: string) {
+  async function submitSchedules(event: FormEvent<HTMLFormElement>, ownerId: string) {
     event.preventDefault();
     const form = new FormData(event.currentTarget);
     const schedules = days.flatMap((day) => {
@@ -79,11 +81,11 @@ export function ScheduleManager({ specialists, timezone }: ScheduleManagerProps)
       ];
     });
 
-    setPending(`schedule-${specialistId}`);
+    setPending(`schedule-${ownerId}`);
     setMessage(null);
 
     try {
-      await send("/api/admin/schedule/work-schedules", "PUT", { specialistId, schedules });
+      await send("/api/admin/schedule/work-schedules", "PUT", { [ownerKey]: ownerId, schedules });
       setMessage("Расписание обновлено");
       router.refresh();
     } catch (error) {
@@ -93,7 +95,7 @@ export function ScheduleManager({ specialists, timezone }: ScheduleManagerProps)
     }
   }
 
-  async function submitBlock(event: FormEvent<HTMLFormElement>, specialistId: string) {
+  async function submitBlock(event: FormEvent<HTMLFormElement>, ownerId: string) {
     event.preventDefault();
     const formElement = event.currentTarget;
     const form = new FormData(formElement);
@@ -101,12 +103,12 @@ export function ScheduleManager({ specialists, timezone }: ScheduleManagerProps)
     const startsAtLocalTime = String(form.get("startsAtLocalTime") ?? "");
     const endsAtLocalTime = String(form.get("endsAtLocalTime") ?? "");
 
-    setPending(`block-${specialistId}`);
+    setPending(`block-${ownerId}`);
     setMessage(null);
 
     try {
       await send("/api/admin/schedule/time-blocks", "POST", {
-        specialistId,
+        [ownerKey]: ownerId,
         startsAtUtc: localDateTimeToUtc(date, startsAtLocalTime, timezone).toISOString(),
         endsAtUtc: localDateTimeToUtc(date, endsAtLocalTime, timezone).toISOString(),
         reason: String(form.get("reason") ?? "")
@@ -124,20 +126,18 @@ export function ScheduleManager({ specialists, timezone }: ScheduleManagerProps)
   return (
     <div className="grid gap-4">
       {message && <p className="rounded-md border bg-card p-3 text-sm text-muted-foreground">{message}</p>}
-      {specialists.map((specialist) => (
-        <Card key={specialist.id} className="p-5">
-          <h2 className="text-xl font-semibold">
-            {specialist.firstName} {specialist.lastName}
-          </h2>
+      {owners.map((owner) => (
+        <Card key={owner.id} className="p-5">
+          <h2 className="text-xl font-semibold">{owner.name}</h2>
 
-          <form className="mt-4 grid gap-3" onSubmit={(event) => submitSchedules(event, specialist.id)}>
+          <form className="mt-4 grid gap-3" onSubmit={(event) => submitSchedules(event, owner.id)}>
             <div className="grid gap-3 xl:grid-cols-7">
               {days.map((day) => {
-                const schedule = specialist.workSchedules.find((item) => item.weekday === day.value);
+                const schedule = owner.workSchedules.find((item) => item.weekday === day.value);
                 const breakText = schedule?.breaksJson[0]
                   ? `${schedule.breaksJson[0].startsAtLocalTime}-${schedule.breaksJson[0].endsAtLocalTime}`
                   : "";
-                const dayKey = `${specialist.id}-${day.value}`;
+                const dayKey = `${owner.id}-${day.value}`;
                 const enabled = enabledDays[dayKey] ?? Boolean(schedule);
 
                 return (
@@ -182,7 +182,7 @@ export function ScheduleManager({ specialists, timezone }: ScheduleManagerProps)
             </div>
             <Button
               type="submit"
-              disabled={pending === `schedule-${specialist.id}`}
+              disabled={pending === `schedule-${owner.id}`}
               className="w-fit"
               data-testid="schedule-save"
             >
@@ -193,7 +193,7 @@ export function ScheduleManager({ specialists, timezone }: ScheduleManagerProps)
 
           <form
             className="mt-5 grid gap-3 rounded-md border bg-muted/30 p-4 md:grid-cols-[150px_120px_120px_1fr_auto]"
-            onSubmit={(event) => submitBlock(event, specialist.id)}
+            onSubmit={(event) => submitBlock(event, owner.id)}
           >
             <Input name="date" type="date" required aria-label="Дата блокировки" />
             <Input name="startsAtLocalTime" type="time" required aria-label="Начало блокировки" />
@@ -201,7 +201,7 @@ export function ScheduleManager({ specialists, timezone }: ScheduleManagerProps)
             <Input name="reason" required placeholder="Причина блокировки" aria-label="Причина блокировки" />
             <Button
               type="submit"
-              disabled={pending === `block-${specialist.id}`}
+              disabled={pending === `block-${owner.id}`}
               variant="secondary"
               data-testid="schedule-block"
             >

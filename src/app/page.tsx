@@ -1,28 +1,40 @@
-import type { ReactNode } from "react";
-import {
-  ArrowRight,
-  ArrowUpRight,
-  CalendarDays,
-  CheckCircle2,
-  Clock3,
-  MapPin,
-  MessageCircle,
-  Phone,
-  Quote,
-  ShieldCheck,
-  Sparkles,
-  Star
-} from "lucide-react";
+import type { Metadata } from "next";
+import { ArrowUpRight, Mail, MapPin, Phone, Plus, Star } from "lucide-react";
 import Image from "next/image";
-import { BookingForm } from "@/components/booking/booking-form";
-import { FadeIn } from "@/components/ui/fade-in";
-import { SiteFooter } from "@/components/layout/site-footer";
-import { SiteHeader } from "@/components/layout/site-header";
-import { prisma } from "@/lib/prisma";
+import Link from "next/link";
+import { redirect } from "next/navigation";
+import { CLINIC_CONTACTS, CLINIC_SITE_URL } from "@/config/clinic";
+import { FEATURED_REVIEW_SOURCE_URL } from "@/domain/review/featured-reviews";
+import { LASER_SERVICES } from "@/domain/service/current-price-list";
+import { FEATURED_SPECIALIST } from "@/domain/specialist/featured-specialist";
 import { buildDirectionsUrl, buildMapEmbedUrl } from "@/lib/map";
+import { prisma } from "@/lib/prisma";
 import { formatPrice } from "@/lib/utils";
+import { ClinicHero } from "./clinic-hero";
+import { ClinicPage } from "./clinic-page";
+import { SpecialistCarousel } from "./specialist-carousel";
+import styles from "./home.module.css";
 
 export const dynamic = "force-dynamic";
+
+const title = "Клиника «Сияние» в Чите — косметология и лазерная эпиляция";
+const description =
+  "Клиника красоты и здоровья «Сияние» в Чите, ул. Суглинная, 2Б. Приём врача-косметолога, лазерная эпиляция и массаж. Цены и запись онлайн.";
+
+export const metadata: Metadata = {
+  title: { absolute: title },
+  description,
+  alternates: { canonical: "/" },
+  openGraph: {
+    type: "website",
+    locale: "ru_RU",
+    siteName: "Сияние",
+    url: "/",
+    title,
+    description,
+    images: ["/clinic/treatment-room.webp"]
+  }
+};
 
 async function getHomeData() {
   const [categories, specialists, reviews, settings] = await Promise.all([
@@ -39,472 +51,425 @@ async function getHomeData() {
     prisma.specialist.findMany({
       where: { isActive: true, deletedAt: null },
       orderBy: { sortOrder: "asc" },
-      include: {
-        photo: true,
-        services: { where: { isActive: true }, include: { service: true } }
-      }
+      include: { photo: true }
     }),
     prisma.review.findMany({
       where: { status: "PUBLISHED" },
       orderBy: { reviewDate: "desc" },
       take: 6
     }),
-    prisma.clinicSettings.findFirst()
+    prisma.clinicSettings.findFirst({
+      select: { phone: true, email: true, address: true, mapEmbedUrl: true }
+    })
   ]);
 
   return { categories, specialists, reviews, settings };
 }
 
-const trustItems = [
+const reviewDate = new Intl.DateTimeFormat("ru-RU", { month: "long", year: "numeric" });
+const popularZones = [
+  { slug: "laser-upper-lip", label: "Верхняя губа" },
+  { slug: "laser-underarms", label: "Подмышки" },
+  { slug: "laser-deep-bikini", label: "Глубокое бикини" },
+  { slug: "laser-full-legs", label: "Ноги полностью" }
+];
+const laserZones = popularZones.flatMap(({ slug, label }) => {
+  const zone = LASER_SERVICES.find((entry) => entry.slug === slug);
+  return zone ? [{ slug, label, price: zone.prices.one }] : [];
+});
+
+const roomPhotos = [
   {
-    icon: ShieldCheck,
-    label: "Экспертный подход",
-    description: "Каждый протокол выстроен на диагностике и опыте врачей клиники."
+    src: "/clinic/consultation-room.webp",
+    alt: "Белое кресло и графитовые стены в процедурном кабинете «Сияния»",
+    label: "Процедурный кабинет",
+    width: 1800,
+    height: 1201
   },
   {
-    icon: Sparkles,
-    label: "Индивидуальные протоколы",
-    description: "Программа ухода создаётся под вашу кожу, задачи и ритм жизни."
+    src: "/clinic/massage-room.webp",
+    alt: "Массажный стол и кресло в кабинете «Сияния»",
+    label: "Кабинет массажа",
+    width: 1440,
+    height: 1080
   },
   {
-    icon: CalendarDays,
-    label: "Приём по записи",
-    description: "Комфортное время без спешки и очередей — только вы и ваш специалист."
+    src: "/clinic/laser-equipment.webp",
+    alt: "Аппарат для лазерной эпиляции рядом с кушеткой",
+    label: "Лазерное оборудование",
+    width: 1160,
+    height: 1547
   }
 ];
 
-const heroFacts: [string, string][] = [
-  ["Персонально", "протокол под вашу кожу"],
-  ["Чита", "ул. Суглинная, 2Б"],
-  ["По записи", "приём в комфортном ритме"]
-];
+type Price = { priceExact: number | null; priceFrom: number | null };
 
-const approachItems: [string, string][] = [
-  ["Диагностика", "Детально изучаем состояние кожи, учитываем противопоказания и ваши пожелания."],
-  ["Персональный протокол", "Формируем выверенную программу — только процедуры, которые действительно работают."],
-  ["Сопровождение", "Подбираем домашний уход и ведём вас до результата, к которому вы стремитесь."]
-];
-
-const visitSteps: [string, string, string][] = [
-  ["01", "Заявка", "Выберите услугу на сайте или оставьте заявку — мы подберём формат приёма под вашу задачу."],
-  ["02", "Консьерж-сервис", "Администратор согласует удобное время, специалиста и расскажет о подготовке к процедуре."],
-  ["03", "Консультация", "Врач проводит диагностику кожи, изучает запрос и формирует индивидуальный протокол."],
-  ["04", "Процедура и уход", "Проводим процедуру по премиальным протоколам и сопровождаем вас после визита."]
-];
-
-const contactNotes = [
-  "Начните с консультации — основы безупречного результата",
-  "Персональный администратор подтвердит удобное для вас время",
-  "Финальная стоимость определяется индивидуально после диагностики"
-];
-
-function initials(firstName: string, lastName: string) {
-  return `${firstName.slice(0, 1)}${lastName.slice(0, 1)}`;
+function priceFloor(services: Price[]) {
+  const prices = services.flatMap((service) => {
+    const price = service.priceExact ?? service.priceFrom;
+    return price === null ? [] : [price];
+  });
+  return prices.length ? formatPrice(Math.min(...prices)) : "Уточнить цену";
 }
 
-function SectionLabel({ index, children }: { index?: string; children: ReactNode }) {
-  return (
-    <p className="flex items-center gap-3 text-xs font-medium uppercase tracking-[0.22em] text-muted-foreground">
-      {index && <span className="text-metal-strong">{index}</span>}
-      <span className="h-px w-8 bg-border" />
-      {children}
-    </p>
-  );
+function bookingLink(serviceSlug?: string, direction?: "laser" | "doctor") {
+  const params = new URLSearchParams();
+  if (direction) params.set("booking", direction);
+  if (serviceSlug) params.set("service", serviceSlug);
+  return "/booking" + (params.size ? "?" + params : "");
 }
 
-const ctaPrimary =
-  "inline-flex h-12 items-center justify-center gap-2 rounded-full bg-primary px-6 text-sm font-medium text-primary-foreground shadow-[0_16px_40px_hsl(var(--metal-glow))] transition hover:brightness-105";
-const ctaGhost =
-  "inline-flex h-12 items-center justify-center gap-2 rounded-full border border-border bg-card/60 px-6 text-sm font-medium text-foreground backdrop-blur transition hover:border-metal";
+export default async function HomePage({
+  searchParams
+}: {
+  searchParams: Promise<{ booking?: string; request?: string }>;
+}) {
+  const query = await searchParams;
+  if (query.booking === "laser" || query.booking === "doctor" || query.request === "callback") {
+    const params = new URLSearchParams();
+    if (query.booking) params.set("booking", query.booking);
+    if (query.request === "callback") params.set("request", "callback");
+    redirect("/booking?" + params);
+  }
 
-export default async function HomePage() {
   const { categories, specialists, reviews, settings } = await getHomeData();
-  const services = categories.flatMap((category) => category.services);
-  const phone = settings?.phone ?? "+7 (999) 000-00-00";
-  const email = settings?.email ?? "hello@siyanie.test";
-  const address = settings?.address ?? "Чита, ул. Суглинная, 2Б";
+  const specialistCards = specialists.map((specialist) => {
+    const name = `${specialist.firstName} ${specialist.lastName}`.trim();
+    const photo =
+      specialist.slug === FEATURED_SPECIALIST.slug &&
+      (!specialist.photo?.publicUrl || specialist.photo.publicUrl === "/doctors/svetlana-nersisyan.jpg")
+        ? FEATURED_SPECIALIST.photo
+        : specialist.photo;
+    return { specialist, name, photo };
+  });
+  const phone = settings?.phone || CLINIC_CONTACTS.phone;
+  const email = settings?.email || CLINIC_CONTACTS.email;
+  const address = settings?.address || CLINIC_CONTACTS.address;
   const mapEmbedUrl = buildMapEmbedUrl(address, settings?.mapEmbedUrl);
   const directionsUrl = buildDirectionsUrl(address);
+  const services = categories.flatMap((category) => category.services);
+  const massageServices = services.filter((service) => /массаж/i.test(service.name));
+  const cosmeticServices = services.filter(
+    (service) => !service.requiresResourceId && !massageServices.includes(service)
+  );
+  const laserPrice = priceFloor(
+    LASER_SERVICES.map(({ prices }) => ({ priceExact: prices.one, priceFrom: null }))
+  );
+  const consultation =
+    cosmeticServices.find((service) => service.slug === "cosmetologist-consultation") ??
+    cosmeticServices.find((service) => /консультац/i.test(service.name));
+  const clinicStructuredData = {
+    "@context": "https://schema.org",
+    "@type": ["MedicalClinic", "LocalBusiness"],
+    "@id": `${CLINIC_SITE_URL}/#clinic`,
+    name: "Клиника красоты и здоровья «Сияние»",
+    url: `${CLINIC_SITE_URL}/`,
+    description,
+    image: `${CLINIC_SITE_URL}/clinic/treatment-room.webp`,
+    logo: `${CLINIC_SITE_URL}/brand/siyanie-round.webp`,
+    telephone: phone.replace(/[^+0-9]/g, ""),
+    email,
+    address: {
+      "@type": "PostalAddress",
+      streetAddress: address.replace(/^Чита,\s*/i, ""),
+      addressLocality: "Чита",
+      addressRegion: "Забайкальский край",
+      addressCountry: "RU"
+    }
+  };
 
   return (
-    <>
-      <SiteHeader phone={phone} />
-      <main className="landing-page overflow-hidden">
-        {/* Hero */}
-        <section className="relative isolate border-b border-border">
-          <div className="landing-hero-bg absolute inset-0" />
-          <div className="relative mx-auto grid min-h-[calc(100svh-4rem)] max-w-7xl items-center gap-14 px-6 py-16 lg:grid-cols-[1.02fr_0.98fr] lg:px-8">
-            <FadeIn className="max-w-2xl">
-              <SectionLabel>Эстетическая медицина · Чита</SectionLabel>
-              <h1 className="mt-7 text-5xl leading-[1.02] text-foreground sm:text-6xl lg:text-7xl">
-                <span className="italic text-metal-strong">Сияние</span>
-                <span className="mt-2 block font-normal">
-                  искусство ухода за кожей
-                </span>
-              </h1>
-              <p className="mt-7 max-w-xl text-lg leading-8 text-muted-foreground">
-                Клиника эстетической медицины в Чите. Индивидуальные протоколы, безупречная эстетика
-                и внимание к каждой детали — от первой консультации до совершенного результата.
-              </p>
-              <div className="mt-9 flex flex-col gap-3 sm:flex-row">
-                <a href="#booking" className={ctaPrimary}>
-                  Записаться на приём
-                  <ArrowRight className="h-4 w-4" />
-                </a>
-                <a href={`tel:${phone}`} className={ctaGhost}>
-                  <Phone className="h-4 w-4 text-metal" />
-                  Позвонить
-                </a>
-              </div>
+    <ClinicPage phone={phone} address={address}>
+      <main id="clinic-main" tabIndex={-1}>
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify(clinicStructuredData).replace(/</g, "\\u003c")
+          }}
+        />
+        <ClinicHero address={address} />
 
-              <div className="mt-12 grid max-w-lg grid-cols-3 gap-6">
-                {heroFacts.map(([value, label]) => (
-                  <div key={value} className="border-l border-metal pl-4">
-                    <p className="text-xl font-medium text-foreground">{value}</p>
-                    <p className="mt-1 text-sm leading-5 text-muted-foreground">{label}</p>
-                  </div>
-                ))}
-              </div>
-            </FadeIn>
-
-            <FadeIn delay={140} className="relative">
-              <div className="absolute -inset-6 rounded-[2.5rem] bg-primary/5 blur-3xl" />
-              <div className="hero-editorial-frame soft-shadow relative overflow-hidden rounded-2xl border border-border p-3">
-                <div className="relative aspect-[4/5] overflow-hidden rounded-xl border border-border/70">
-                  <Image
-                    src="/brand/hero-portrait.jpg"
-                    alt="Спокойный портрет для эстетической клиники"
-                    fill
-                    priority
-                    sizes="(min-width: 1024px) 46vw, 100vw"
-                    className="hero-editorial-image object-cover"
-                  />
-                  <div className="hero-editorial-vignette absolute inset-0" />
-                  <div className="absolute left-5 right-5 top-5 flex items-center justify-between text-[0.68rem] uppercase tracking-[0.2em] text-white/80">
-                    <span>skin studio</span>
-                    <span>since 2026</span>
-                  </div>
-                  <div className="absolute bottom-0 left-0 right-0 p-6 sm:p-8">
-                    <div className="editorial-rule mb-5 h-px" />
-                    <p className="display-serif max-w-sm text-3xl leading-tight text-white sm:text-4xl">
-                      красота начинается с точной диагностики
-                    </p>
-                    <p className="mt-3 max-w-sm text-sm leading-6 text-white/90 drop-shadow-sm">
-                      Мы предлагаем только то, что раскрывает вашу естественную красоту.
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </FadeIn>
-          </div>
-        </section>
-
-        {/* Trust band */}
-        <section className="border-b border-border surface-soft">
-          <div className="mx-auto grid max-w-7xl gap-8 px-6 py-10 sm:grid-cols-3 lg:px-8">
-            {trustItems.map((item, index) => (
-              <FadeIn key={item.label} delay={index * 80} className="flex items-start gap-4">
-                <span className="mt-0.5 inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-metal text-metal">
-                  <item.icon className="h-4 w-4" />
-                </span>
-                <div>
-                  <p className="font-medium text-foreground">{item.label}</p>
-                  <p className="mt-1 text-sm leading-6 text-muted-foreground">{item.description}</p>
-                </div>
-              </FadeIn>
-            ))}
-          </div>
-        </section>
-
-        {/* Booking */}
-        <section id="booking" className="border-b border-border">
-          <div className="mx-auto grid max-w-7xl gap-12 px-6 py-24 lg:grid-cols-[0.82fr_1.18fr] lg:px-8">
-            <FadeIn className="max-w-xl lg:sticky lg:top-24 lg:self-start">
-              <SectionLabel index="01">Онлайн-запись</SectionLabel>
-              <h2 className="mt-6 text-4xl leading-tight text-foreground sm:text-5xl">
-                Запишитесь на консультацию или процедуру
-              </h2>
-              <p className="mt-5 leading-7 text-muted-foreground">
-                Выберите услугу, специалиста и удобное время. Если хотите довериться экспертам,
-                оставьте заявку — персональный администратор подберёт оптимальный формат приёма.
-              </p>
-              <div className="mt-8 grid gap-3 text-sm">
-                {contactNotes.map((note) => (
-                  <p key={note} className="flex items-start gap-2.5 text-muted-foreground">
-                    <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-metal" />
-                    {note}
-                  </p>
-                ))}
-              </div>
-            </FadeIn>
-            <FadeIn delay={120}>
-              <div className="soft-shadow rounded-2xl border border-border bg-card p-6 sm:p-8">
-                <div className="mb-6">
-                  <h3 className="text-2xl text-foreground">
-                    Запись в <span className="italic text-metal-strong">Сияние</span>
-                  </h3>
-                  <p className="mt-2 text-sm leading-6 text-muted-foreground">
-                    После отправки заявки администратор согласует детали и подтвердит запись.
-                  </p>
-                </div>
-                <BookingForm
-                  services={services.map((service) => ({ id: service.id, name: service.name }))}
-                  specialists={specialists.map((specialist) => ({
-                    id: specialist.id,
-                    firstName: specialist.firstName,
-                    lastName: specialist.lastName,
-                    services: specialist.services.map((item) => ({ service: { id: item.service.id } }))
-                  }))}
-                />
-              </div>
-            </FadeIn>
-          </div>
-        </section>
-
-        {/* About */}
-        <section className="border-b border-border">
-          <div className="mx-auto max-w-7xl px-6 py-24 lg:px-8">
-            <div className="grid gap-12 lg:grid-cols-[0.9fr_1.1fr]">
-              <FadeIn>
-                <SectionLabel index="02">О клинике</SectionLabel>
-                <h2 className="mt-6 text-4xl leading-tight text-foreground sm:text-5xl">
-                  Клиника, где красота — это внимание к деталям
-                </h2>
-                <p className="mt-6 leading-8 text-muted-foreground">
-                  <span className="italic text-metal-strong">Сияние</span> — клиника эстетической
-                  медицины в Чите для тех, кто ценит безупречный результат. Мы уделяем время каждому
-                  гостю, выстраиваем индивидуальные протоколы и сопровождаем вас на каждом этапе.
-                </p>
-              </FadeIn>
-              <div className="grid gap-px overflow-hidden rounded-2xl border border-border bg-border sm:grid-cols-3">
-                {approachItems.map(([title, description], index) => (
-                  <FadeIn key={title} delay={index * 90} className="bg-card p-6">
-                    <span className="text-sm text-metal-strong">0{index + 1}</span>
-                    <h3 className="mt-4 text-lg font-medium text-foreground">{title}</h3>
-                    <p className="mt-2 text-sm leading-6 text-muted-foreground">{description}</p>
-                  </FadeIn>
-                ))}
-              </div>
+        <section id="services" className={styles.section}>
+          <div className={styles.shell}>
+            <div className={styles.sectionHeading}>
+              <h2 className={styles.title}>Выберите направление</h2>
+              <Link href="/lazernaya-epilyatsiya" className={styles.textLink}>
+                Лазерная эпиляция в Чите <ArrowUpRight aria-hidden="true" size={17} />
+              </Link>
+              <Link href="/prices" className={styles.textLink}>
+                Полный прайс <ArrowUpRight aria-hidden="true" size={17} />
+              </Link>
             </div>
-          </div>
-        </section>
-
-        {/* Services */}
-        <section id="services" className="border-b border-border surface-soft">
-          <div className="mx-auto max-w-7xl px-6 py-24 lg:px-8">
-            <FadeIn className="flex flex-col justify-between gap-6 md:flex-row md:items-end">
-              <div>
-                <SectionLabel index="03">Услуги</SectionLabel>
-                <h2 className="mt-6 max-w-xl text-4xl leading-tight text-foreground sm:text-5xl">
-                  Процедуры премиального уровня
-                </h2>
-              </div>
-              <p className="max-w-md text-sm leading-6 text-muted-foreground">
-                Цены на сайте указаны для ориентира. Финальная стоимость формируется индивидуально —
-                после диагностики и с учётом препаратов и объёма работы.
-              </p>
-            </FadeIn>
-
-            <div className="mt-12 grid gap-5 lg:grid-cols-3">
-              {services.map((service, index) => (
-                <FadeIn key={service.id} delay={index * 45}>
-                  <a
-                    href="#booking"
-                    className="group flex h-full flex-col rounded-2xl border border-border bg-card p-7 transition hover:border-metal hover:shadow-[0_20px_60px_hsl(var(--soft-shadow))]"
+            <div className={styles.serviceList}>
+              <details className={styles.service} data-testid="service-card">
+                <summary className={styles.serviceSummary}>
+                  <span className={styles.serviceMedia}>
+                    <Image
+                      src="/clinic/consultation-room.webp"
+                      alt=""
+                      fill
+                      sizes="(min-width: 900px) 34vw, (min-width: 620px) 50vw, 94vw"
+                    />
+                  </span>
+                  <span className={styles.serviceInfo}>
+                    <span className={styles.serviceName}>Косметология</span>
+                    <span className={styles.servicePrice}>{priceFloor(cosmeticServices)}</span>
+                  </span>
+                  <span className={styles.serviceIcon}>
+                    <Plus aria-hidden="true" size={20} />
+                  </span>
+                </summary>
+                <div className={styles.serviceBody}>
+                  <p>Консультация врача, уход за кожей и эстетические процедуры.</p>
+                  <Link
+                    href={bookingLink(consultation?.slug, "doctor")}
+                    className={styles.textLink}
                   >
-                    <div className="flex items-start justify-between gap-4">
-                      <h3 className="text-2xl leading-snug text-foreground">{service.name}</h3>
-                      <Sparkles className="mt-1 h-4 w-4 shrink-0 text-metal opacity-70" />
-                    </div>
-                    <p className="mt-4 flex-1 text-sm leading-6 text-muted-foreground">
-                      {service.shortDescription}
-                    </p>
-                    <div className="mt-8 flex items-center justify-between border-t border-border pt-5">
-                      <span className="text-lg text-metal-strong">
-                        {formatPrice(service.priceFrom, service.priceExact)}
-                      </span>
-                      <span className="inline-flex items-center gap-1.5 text-sm text-muted-foreground">
-                        <Clock3 className="h-3.5 w-3.5" />
-                        {service.durationMinutes} мин
-                      </span>
-                    </div>
-                    <span className="mt-5 inline-flex items-center gap-1.5 text-sm font-medium text-metal-strong transition group-hover:gap-2.5">
-                      Записаться
-                      <ArrowRight className="h-4 w-4" />
-                    </span>
-                  </a>
-                </FadeIn>
-              ))}
+                    Записаться к врачу <ArrowUpRight aria-hidden="true" size={16} />
+                  </Link>
+                </div>
+              </details>
+              <details className={styles.service} data-testid="service-card">
+                <summary className={styles.serviceSummary}>
+                  <span className={styles.serviceMedia}>
+                    <Image
+                      src="/clinic/laser-equipment.webp"
+                      alt=""
+                      fill
+                      sizes="(min-width: 900px) 34vw, (min-width: 620px) 50vw, 94vw"
+                    />
+                  </span>
+                  <span className={styles.serviceInfo}>
+                    <span className={styles.serviceName}>Лазерная эпиляция</span>
+                    <span className={styles.servicePrice}>{laserPrice}</span>
+                  </span>
+                  <span className={styles.serviceIcon}>
+                    <Plus aria-hidden="true" size={20} />
+                  </span>
+                </summary>
+                <div className={styles.serviceBody}>
+                  <p>Выберите зону, чтобы перейти к доступному времени.</p>
+                  <ul className={styles.zoneList}>
+                    {laserZones.map((zone) => (
+                      <li key={zone.slug}>
+                        <Link href={bookingLink(zone.slug, "laser")}>
+                          <span>{zone.label}</span>
+                          <span>
+                            {formatPrice(null, zone.price)}{" "}
+                            <ArrowUpRight aria-hidden="true" size={15} />
+                          </span>
+                        </Link>
+                      </li>
+                    ))}
+                  </ul>
+                  <Link href="/prices#laser-hair-removal" className={styles.textLink}>
+                    Все зоны и цены <ArrowUpRight aria-hidden="true" size={16} />
+                  </Link>
+                </div>
+              </details>
+              <details className={styles.service} data-testid="service-card">
+                <summary className={styles.serviceSummary}>
+                  <span className={styles.serviceMedia}>
+                    <Image
+                      src="/clinic/massage-room.webp"
+                      alt=""
+                      fill
+                      sizes="(min-width: 900px) 34vw, (min-width: 620px) 50vw, 94vw"
+                    />
+                  </span>
+                  <span className={styles.serviceInfo}>
+                    <span className={styles.serviceName}>Массаж</span>
+                    <span className={styles.servicePrice}>{priceFloor(massageServices)}</span>
+                  </span>
+                  <span className={styles.serviceIcon}>
+                    <Plus aria-hidden="true" size={20} />
+                  </span>
+                </summary>
+                <div className={styles.serviceBody}>
+                  {massageServices.length ? (
+                    <Link
+                      href={bookingLink(massageServices[0].slug, "doctor")}
+                      className={styles.textLink}
+                    >
+                      Записаться на массаж <ArrowUpRight aria-hidden="true" size={16} />
+                    </Link>
+                  ) : (
+                    <>
+                      <p>Администратор подскажет стоимость и предложит удобное время.</p>
+                      <Link href="/booking?request=callback" className={styles.textLink}>
+                        Попросить перезвонить <ArrowUpRight aria-hidden="true" size={16} />
+                      </Link>
+                    </>
+                  )}
+                </div>
+              </details>
             </div>
           </div>
         </section>
 
-        {/* Visit steps */}
-        <section className="border-b border-border">
-          <div className="mx-auto max-w-7xl px-6 py-24 lg:px-8">
-            <FadeIn className="max-w-2xl">
-              <SectionLabel index="04">Визит</SectionLabel>
-              <h2 className="mt-6 text-4xl leading-tight text-foreground sm:text-5xl">Ваш путь к результату</h2>
-            </FadeIn>
-            <div className="mt-12 grid gap-10 sm:grid-cols-2 xl:grid-cols-4">
-              {visitSteps.map(([number, title, description], index) => (
-                <FadeIn key={number} delay={index * 80}>
-                  <div className="border-t border-metal pt-6">
-                    <p className="text-3xl font-light text-metal-strong">{number}</p>
-                    <h3 className="mt-4 text-lg font-medium text-foreground">{title}</h3>
-                    <p className="mt-2 text-sm leading-6 text-muted-foreground">{description}</p>
-                  </div>
-                </FadeIn>
-              ))}
-            </div>
-          </div>
-        </section>
-
-        {/* Specialists */}
-        <section id="specialists" className="border-b border-border surface-soft">
-          <div className="mx-auto max-w-7xl px-6 py-24 lg:px-8">
-            <FadeIn className="max-w-2xl">
-              <SectionLabel index="05">Специалисты</SectionLabel>
-              <h2 className="mt-6 text-4xl leading-tight text-foreground sm:text-5xl">
-                Врачи, которым доверяют вашу красоту
-              </h2>
-              <p className="mt-5 leading-7 text-muted-foreground">
-                Команда опытных специалистов с профильным образованием и вниманием к каждому гостю.
-                Ваш врач знает вашу историю и ведёт вас к результату на протяжении всего пути.
-              </p>
-            </FadeIn>
-            <div className="mt-12 grid gap-5 md:grid-cols-3">
-              {specialists.map((specialist, index) => (
-                <FadeIn key={specialist.id} delay={index * 90}>
-                  <div className="group h-full overflow-hidden rounded-2xl border border-border bg-card transition hover:border-metal">
-                    <div className="relative aspect-[4/5] overflow-hidden">
-                      {specialist.photo?.publicUrl ? (
-                        <Image
-                          src={specialist.photo.publicUrl}
-                          alt={specialist.photo.alt ?? `${specialist.firstName} ${specialist.lastName}`}
-                          fill
-                          sizes="(min-width: 768px) 33vw, 100vw"
-                          className="hero-editorial-image object-cover transition duration-700 group-hover:scale-[1.03]"
-                        />
-                      ) : (
-                        <div className="panel-gradient flex h-full items-center justify-center">
-                          <div className="panel-glow absolute inset-0" />
-                          <p className="relative text-6xl text-metal-strong">
-                            {initials(specialist.firstName, specialist.lastName)}
-                          </p>
+        {specialists.length > 0 && (
+          <section id="specialists" className={styles.specialists} aria-labelledby="specialists-title">
+            <div className={styles.shell}>
+              <h2 id="specialists-title" className={`${styles.title} ${styles.specialistsTitle}`}>Специалисты клиники</h2>
+              <SpecialistCarousel
+                specialists={specialistCards.map(({ specialist, name, photo }) => ({
+                  id: specialist.id, name, photoUrl: photo?.publicUrl ?? null
+                }))}
+              >
+                {specialistCards.map(({ specialist, name, photo }) => {
+                  const isLaserSpecialist = specialist.slug === "nina-andreevna";
+                  return (
+                    <article key={specialist.id} className={styles.doctorGrid}>
+                      {photo?.publicUrl && (
+                        <div className={styles.portraitMedia}>
+                          <Image
+                            src={photo.publicUrl}
+                            alt={photo.alt ?? name}
+                            width={photo.width ?? 1000}
+                            height={photo.height ?? 1000}
+                            sizes="(min-width: 900px) 35vw, calc(100vw - 2.3rem)"
+                            className={styles.portrait}
+                          />
                         </div>
                       )}
-                      <div className="hero-editorial-vignette absolute inset-0" />
-                      <div className="absolute inset-x-0 bottom-0 p-6">
-                        <h3 className="text-2xl text-white drop-shadow-sm">
-                          {specialist.firstName} {specialist.lastName}
-                        </h3>
-                        <p className="mt-1 text-sm font-medium uppercase tracking-wide text-white/85 drop-shadow-sm">
-                          {specialist.position}
-                        </p>
+                      <div className={styles.doctorCopy}>
+                        <p className={styles.position}>{specialist.position}</p>
+                        <h3 className={styles.title}>{name}</h3>
+                        {!isLaserSpecialist && <p className={styles.doctorDescription}>{specialist.description}</p>}
+                        <dl className={styles.credentials}>
+                          <div>
+                            <dt>Стаж</dt>
+                            <dd>
+                              {specialist.experienceYears} {isLaserSpecialist ? "лет в эстетических процедурах" : "лет врачебной практики"}
+                            </dd>
+                          </div>
+                          <div>
+                            <dt>Образование</dt>
+                            <dd>{specialist.education}</dd>
+                          </div>
+                        </dl>
+                        <div className={styles.inlineActions}>
+                          {isLaserSpecialist ? (
+                            <Link href={bookingLink(undefined, "laser")} className={styles.buttonDark}>
+                              Записаться на эпиляцию <ArrowUpRight aria-hidden="true" size={16} />
+                            </Link>
+                          ) : (
+                            <Link href={bookingLink(consultation?.slug, "doctor")} className={styles.buttonDark}>
+                              Записаться к врачу <ArrowUpRight aria-hidden="true" size={16} />
+                            </Link>
+                          )}
+                          <Link href={`/specialists/${specialist.slug}`} className={styles.textLink}>
+                            {isLaserSpecialist ? "О специалисте" : "О враче"} <ArrowUpRight aria-hidden="true" size={16} />
+                          </Link>
+                        </div>
                       </div>
-                    </div>
-                    <p className="p-6 text-sm leading-6 text-muted-foreground">{specialist.description}</p>
-                  </div>
-                </FadeIn>
-              ))}
+                    </article>
+                  );
+                })}
+              </SpecialistCarousel>
             </div>
-          </div>
-        </section>
+          </section>
+        )}
 
-        {/* Reviews */}
-        <section id="reviews" className="border-b border-border">
-          <div className="mx-auto max-w-7xl px-6 py-24 lg:px-8">
-            <FadeIn className="max-w-2xl">
-              <SectionLabel index="06">Отзывы</SectionLabel>
-              <h2 className="mt-6 text-4xl leading-tight text-foreground sm:text-5xl">Истории наших гостей</h2>
-            </FadeIn>
-            <div className="mt-12 grid gap-5 md:grid-cols-2">
-              {reviews.map((review, index) => (
-                <FadeIn key={review.id} delay={index * 60}>
-                  <figure className="flex h-full flex-col rounded-2xl border border-border bg-card p-8">
-                    <Quote className="h-7 w-7 text-metal opacity-60" />
-                    <blockquote className="mt-5 flex-1 text-lg leading-8 text-foreground">
-                      {review.text}
-                    </blockquote>
-                    <figcaption className="mt-6 flex items-center justify-between border-t border-border pt-5">
-                      <span className="font-medium text-foreground">{review.clientDisplayName}</span>
-                      <span className="inline-flex items-center gap-1 text-sm text-metal-strong">
-                        <Star className="h-4 w-4 fill-current" />
-                        {review.rating}/5
+        <section id="reviews" className={styles.section}>
+          <div className={styles.shell}>
+            <div className={styles.sectionHeading}>
+              <h2 className={styles.title}>Отзывы пациентов</h2>
+              <a
+                href={FEATURED_REVIEW_SOURCE_URL}
+                target="_blank"
+                rel="noreferrer"
+                className={styles.textLink}
+              >
+                Все отзывы на ПроДокторов <ArrowUpRight aria-hidden="true" size={17} />
+              </a>
+            </div>
+            {reviews.length > 0 && (
+              <>
+                <div className={styles.reviews}>
+                  {reviews.map((review) => (
+                    <figure key={review.id} className={styles.review}>
+                      <span className={styles.rating} aria-label={`Оценка ${review.rating} из 5`}>
+                        <Star aria-hidden="true" size={16} fill="currentColor" /> {review.rating}/5
                       </span>
-                    </figcaption>
-                  </figure>
-                </FadeIn>
+                      <blockquote>«{review.text}»</blockquote>
+                      <figcaption>
+                        <span>{review.clientDisplayName}</span>
+                        <span>
+                          {review.source} · {reviewDate.format(review.reviewDate)}
+                        </span>
+                      </figcaption>
+                    </figure>
+                  ))}
+                </div>
+                <p className={styles.reviewNote}>Отзывы сокращены без изменения смысла.</p>
+              </>
+            )}
+          </div>
+        </section>
+
+        <section id="interior" className={styles.gallery} aria-label="Фотографии клиники">
+          <div className={styles.shell}>
+            <div className={styles.galleryGrid}>
+              {roomPhotos.map((photo) => (
+                <figure key={photo.src}>
+                  <Image
+                    src={photo.src}
+                    alt={photo.alt}
+                    width={photo.width}
+                    height={photo.height}
+                    sizes="(min-width: 900px) 33vw, (min-width: 620px) 50vw, calc(100vw - 40px)"
+                  />
+                  <figcaption>{photo.label}</figcaption>
+                </figure>
               ))}
             </div>
           </div>
         </section>
 
-        {/* Contacts */}
-        <section id="contacts" className="mx-auto max-w-7xl px-6 py-24 lg:px-8">
-          <div className="grid gap-12 md:grid-cols-[0.9fr_1.1fr]">
-            <FadeIn>
-              <SectionLabel>Контакты</SectionLabel>
-              <h2 className="mt-6 text-4xl leading-tight text-foreground sm:text-5xl">Мы в Чите</h2>
-              <p className="mt-5 max-w-md leading-7 text-muted-foreground">
-                Рекомендуем записаться заранее — так мы подберём удобное время и подготовим всё
-                необходимое к вашему визиту.
-              </p>
-              <div className="mt-8 grid gap-4 text-sm">
-                <p className="flex items-center gap-3 text-muted-foreground">
-                  <MapPin className="h-4 w-4 text-metal" />
-                  {address}
-                </p>
-                <a
-                  href={`tel:${phone}`}
-                  className="inline-flex items-center gap-3 text-foreground transition hover:text-metal-strong"
-                >
-                  <Phone className="h-4 w-4 text-metal" />
-                  {phone}
-                </a>
-                <a
-                  href={`mailto:${email}`}
-                  className="inline-flex items-center gap-3 text-foreground transition hover:text-metal-strong"
-                >
-                  <MessageCircle className="h-4 w-4 text-metal" />
-                  {email}
-                </a>
+        <section id="contacts" className={styles.section}>
+          <div className={styles.shell}>
+            <div className={styles.contactGrid}>
+              <div>
+                <h2 className={styles.title}>Как нас найти</h2>
+                <address className={styles.contactDetails}>
+                  <p>
+                    <MapPin size={19} aria-hidden="true" />
+                    <span>{address}</span>
+                  </p>
+                  <a href={`tel:${phone}`}>
+                    <Phone size={18} aria-hidden="true" />
+                    <span>{phone}</span>
+                  </a>
+                  <a href={`mailto:${email}`}>
+                    <Mail size={18} aria-hidden="true" />
+                    <span>{email}</span>
+                  </a>
+                </address>
+                <Link href="/booking" className={styles.buttonDark}>
+                  Записаться <ArrowUpRight aria-hidden="true" size={16} />
+                </Link>
               </div>
-            </FadeIn>
-            <FadeIn delay={120}>
-              <div className="soft-shadow overflow-hidden rounded-2xl border border-border bg-card">
-                <div className="relative aspect-[16/11] w-full bg-muted">
-                  <iframe
-                    title="Карта проезда к клинике Сияние"
-                    src={mapEmbedUrl}
-                    loading="lazy"
-                    referrerPolicy="no-referrer-when-downgrade"
-                    className="absolute inset-0 h-full w-full"
-                    style={{ border: 0 }}
-                  />
-                </div>
+              <div className={styles.map}>
+                <iframe
+                  title="Карта проезда к клинике «Сияние»"
+                  src={mapEmbedUrl}
+                  loading="lazy"
+                  referrerPolicy="no-referrer-when-downgrade"
+                />
                 <a
                   href={directionsUrl}
                   target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center justify-between gap-3 px-6 py-5 text-sm font-medium transition hover:bg-muted"
+                  rel="noreferrer"
+                  data-testid="directions-link"
                 >
-                  <span className="inline-flex items-center gap-2 text-muted-foreground">
-                    <MapPin className="h-4 w-4 text-metal" />
-                    {address}
-                  </span>
-                  <span className="inline-flex shrink-0 items-center gap-1 text-metal-strong">
-                    Построить маршрут
-                    <ArrowUpRight className="h-4 w-4" />
-                  </span>
+                  Построить маршрут <ArrowUpRight aria-hidden="true" size={17} />
                 </a>
               </div>
-            </FadeIn>
+            </div>
           </div>
         </section>
       </main>
-      <SiteFooter phone={phone} email={email} address={address} />
-    </>
+    </ClinicPage>
   );
 }

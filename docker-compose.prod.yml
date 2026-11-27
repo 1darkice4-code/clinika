@@ -1,0 +1,84 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: clinika
+      POSTGRES_USER: clinika
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U clinika -d clinika"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    networks:
+      - internal
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://clinika:${POSTGRES_PASSWORD}@postgres:5432/clinika?schema=public
+      APP_URL: https://siyanieclinic.ru
+      HOSTNAME: 0.0.0.0
+      AUTH_SECRET: ${AUTH_SECRET}
+      CLINIC_TIMEZONE: Europe/Moscow
+      NOTIFICATION_MODE: local
+      TELEGRAM_PROXY_URL: ${TELEGRAM_PROXY_URL:-http://telegram-proxy:10809}
+      LOG_LEVEL: info
+      RATE_LIMIT_ENABLED: "true"
+      BOOKING_ASSISTANT_KEY_FILE: /run/secrets/booking-assistant
+    secrets:
+      - booking-assistant
+    ports:
+      - "127.0.0.1:3100:3000"
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://' + process.env.HOSTNAME + ':3000/api/health').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))"
+        ]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 20s
+    networks:
+      - internal
+      - hesoyam
+
+  migrate:
+    profiles: ["tools"]
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: builder
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://clinika:${POSTGRES_PASSWORD}@postgres:5432/clinika?schema=public
+    command: ["npx", "prisma", "migrate", "deploy"]
+    networks:
+      - internal
+
+networks:
+  internal:
+  hesoyam:
+    external: true
+    name: hh_hh_network
+
+volumes:
+  postgres_data:
+
+secrets:
+  booking-assistant:
+    file: ./.secrets/booking-assistant.key

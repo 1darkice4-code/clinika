@@ -3,6 +3,7 @@ import { permissions } from "@/config/permissions";
 import { getCurrentUser } from "@/domain/auth/auth.service";
 import { assertPermission } from "@/domain/auth/rbac";
 import { writeAudit } from "@/domain/audit/audit.service";
+import { assertResourceExists } from "@/app/api/admin/resources/validate";
 import { ConflictError } from "@/lib/errors";
 import { jsonError, jsonOk } from "@/lib/http";
 import { prisma } from "@/lib/prisma";
@@ -23,7 +24,8 @@ const schema = z.object({
   disclaimer: z.string().max(2000).optional().or(z.literal("")),
   isActive: z.boolean().default(true),
   isFeatured: z.boolean().default(false),
-  sortOrder: z.number().int().default(0)
+  sortOrder: z.number().int().default(0),
+  requiresResourceId: z.string().min(1).nullable().optional()
 });
 
 export async function POST(request: Request) {
@@ -34,6 +36,7 @@ export async function POST(request: Request) {
     const slug = slugify(input.slug || input.name, "service");
     const existing = await prisma.service.findUnique({ where: { slug } });
     if (existing) throw new ConflictError("Услуга с таким slug уже существует");
+    await assertResourceExists(input.requiresResourceId);
 
     const service = await prisma.$transaction(async (tx) => {
       const created = await tx.service.create({
@@ -52,7 +55,8 @@ export async function POST(request: Request) {
           disclaimer: input.disclaimer || null,
           isActive: input.isActive,
           isFeatured: input.isFeatured,
-          sortOrder: input.sortOrder
+          sortOrder: input.sortOrder,
+          requiresResourceId: input.requiresResourceId ?? null
         }
       });
       await writeAudit({

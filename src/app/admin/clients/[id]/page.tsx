@@ -4,6 +4,7 @@ import { ArrowLeft } from "lucide-react";
 import { permissions } from "@/config/permissions";
 import { getCurrentUser } from "@/domain/auth/auth.service";
 import { assertPermission, hasPermission } from "@/domain/auth/rbac";
+import { performerLabel } from "@/domain/appointment/appointment-labels";
 import {
   appointmentStatusClasses,
   appointmentStatusLabels,
@@ -45,7 +46,7 @@ export default async function ClientDetailPage({ params }: { params: Promise<{ i
         where: { deletedAt: null },
         orderBy: { startsAtUtc: "desc" },
         take: 10,
-        include: { service: true, specialist: true }
+        include: { service: true, specialist: true, resource: true }
       },
       consents: {
         orderBy: { acceptedAt: "desc" },
@@ -161,8 +162,7 @@ export default async function ClientDetailPage({ params }: { params: Promise<{ i
                 <div>
                   <p className="font-medium">{appointment.service.name}</p>
                   <p className="mt-1 text-xs text-muted-foreground">
-                    {formatClinicDateTime(appointment.startsAtUtc, timezone)} · {appointment.specialist.firstName}{" "}
-                    {appointment.specialist.lastName}
+                    {formatClinicDateTime(appointment.startsAtUtc, timezone)} · {performerLabel(appointment)}
                   </p>
                 </div>
                 <Badge className={appointmentStatusClasses[appointment.status]}>

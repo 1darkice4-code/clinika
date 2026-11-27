@@ -3,14 +3,11 @@ import { getCurrentUser } from "@/domain/auth/auth.service";
 import { assertPermission } from "@/domain/auth/rbac";
 import { writeAudit } from "@/domain/audit/audit.service";
 import { createLocalNotification } from "@/domain/notification/notification.service";
+import { deliverAppointmentTelegramNotification } from "@/domain/notification/telegram.service";
 import { NotFoundError } from "@/lib/errors";
 import { jsonError, jsonOk } from "@/lib/http";
 import { prisma } from "@/lib/prisma";
 
-/**
- * Real providers are not connected in the MVP, so "resend" re-creates a local
- * notification record from the original event, channel, recipient and links.
- */
 export async function POST(_request: Request, context: { params: Promise<{ id: string }> }) {
   try {
     const user = await getCurrentUser();
@@ -19,6 +16,27 @@ export async function POST(_request: Request, context: { params: Promise<{ id: s
 
     const original = await prisma.notification.findUnique({ where: { id } });
     if (!original) throw new NotFoundError("Уведомление не найдено");
+
+    if (original.channel === "TELEGRAM") {
+      if (!original.appointmentId) {
+        throw new NotFoundError("Запись для Telegram-уведомления не найдена");
+      }
+      const notification = await deliverAppointmentTelegramNotification(original.appointmentId);
+      if (!notification) {
+        throw new NotFoundError("Telegram-уведомления отключены");
+      }
+      await prisma.$transaction((tx) =>
+        writeAudit({
+          tx,
+          userId: user?.id,
+          action: "notification.resend",
+          entityType: "Notification",
+          entityId: notification.id,
+          description: `Повторная отправка уведомления ${original.eventType}`
+        })
+      );
+      return jsonOk({ notification }, { status: 201 });
+    }
 
     const payload = original.payloadJson;
     const variables =

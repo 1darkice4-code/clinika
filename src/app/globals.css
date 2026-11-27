@@ -8,6 +8,27 @@
   config and existing components keep working.
 */
 :root {
+  /* Safari exposes the notch through env(). Telegram Mini Apps expose their
+     own insets instead, and some iOS WKWebViews expose neither. The inline
+     bootstrap in layout.tsx supplies the last-resort iOS value only for that
+     broken WebView case. */
+  --browser-safe-area-top: env(safe-area-inset-top, 0px);
+  --browser-safe-area-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-area-left: env(safe-area-inset-left, 0px);
+  --safe-area-right: env(safe-area-inset-right, 0px);
+  --ios-webview-safe-area-top: 0px;
+  --safe-area-top: max(
+    var(--browser-safe-area-top),
+    var(--tg-safe-area-inset-top, 0px),
+    var(--tg-content-safe-area-inset-top, 0px),
+    var(--ios-webview-safe-area-top)
+  );
+  --safe-area-bottom: max(
+    var(--browser-safe-area-bottom),
+    var(--tg-safe-area-inset-bottom, 0px),
+    var(--tg-content-safe-area-inset-bottom, 0px)
+  );
+  color-scheme: dark;
   --background: 28 12% 9%;
   --foreground: 36 22% 90%;
   --card: 28 9% 12%;
@@ -39,6 +60,7 @@
 }
 
 .light {
+  color-scheme: light;
   --background: 36 26% 94%;
   --foreground: 24 14% 15%;
   --card: 38 34% 98%;
@@ -69,14 +91,89 @@
   --metal-glow: 32 40% 50% / 0.16;
 }
 
+.clinic-home {
+  --background: 216 8% 12%;
+  --foreground: 42 16% 91%;
+  --card: 215 7% 16%;
+  --card-foreground: 42 16% 91%;
+  --primary: 40 39% 64%;
+  --primary-foreground: 220 7% 10%;
+  --muted: 214 7% 20%;
+  --muted-foreground: 40 7% 71%;
+  --accent: 215 7% 24%;
+  --accent-foreground: 42 16% 91%;
+  --border: 216 6% 26%;
+  --input: 216 7% 34%;
+  --ring: 40 39% 64%;
+  --surface-soft: 217 8% 10%;
+  --surface-deep: 216 8% 12%;
+  --hero-mid: 215 8% 16%;
+  --hero-end: 215 9% 11%;
+  --hero-warm-glow: 40 39% 64% / 0.07;
+  --hero-cool-glow: 215 11% 70% / 0.12;
+  --panel-from: 215 8% 20%;
+  --panel-to: 216 8% 12%;
+  --panel-glow: 40 39% 64% / 0.1;
+  --metal: 40 39% 64%;
+  --metal-strong: 41 42% 73%;
+  --metal-glow: 40 36% 57% / 0.18;
+}
+
+.light .clinic-home {
+  --background: 42 15% 94%;
+  --foreground: 220 8% 16%;
+  --card: 45 19% 98%;
+  --card-foreground: 220 8% 16%;
+  --primary: 40 33% 32%;
+  --primary-foreground: 45 25% 98%;
+  --muted: 38 10% 89%;
+  --muted-foreground: 220 6% 36%;
+  --accent: 38 11% 89%;
+  --accent-foreground: 220 8% 16%;
+  --border: 38 10% 82%;
+  --input: 34 9% 64%;
+  --ring: 40 33% 32%;
+  --surface-soft: 40 12% 91%;
+  --surface-deep: 42 15% 94%;
+  --hero-mid: 40 11% 90%;
+  --hero-end: 42 15% 94%;
+  --hero-warm-glow: 40 33% 47% / 0.07;
+  --hero-cool-glow: 218 9% 48% / 0.08;
+  --panel-from: 45 19% 98%;
+  --panel-to: 40 12% 91%;
+  --panel-glow: 40 33% 47% / 0.08;
+  --soft-shadow: 220 10% 20% / 0.12;
+  --metal: 40 33% 32%;
+  --metal-strong: 40 33% 32%;
+  --metal-glow: 40 33% 47% / 0.14;
+}
+
 * {
   border-color: hsl(var(--border));
 }
 
 html {
   scroll-behavior: smooth;
-  /* Offset anchor jumps so section headings clear the 4rem sticky site header. */
-  scroll-padding-top: 5rem;
+  /* Keep anchor targets below the fixed header and the iPhone status area. */
+  scroll-padding-top: calc(5rem + var(--safe-area-top));
+}
+
+.site-skip-link {
+  position: fixed;
+  z-index: 90;
+  inset-block-start: max(.75rem, var(--safe-area-top));
+  inset-inline-start: max(1rem, var(--safe-area-left));
+  padding: .75rem 1rem;
+  border-radius: .75rem;
+  background: #fff9ed;
+  color: #231d14;
+  font-weight: 650;
+  transform: translateY(calc(-100% - var(--safe-area-top) - 1rem));
+}
+
+.site-skip-link:focus {
+  outline: 2px solid #8b6932;
+  transform: none;
 }
 
 body {
@@ -87,8 +184,202 @@ body {
   background-attachment: fixed;
   color: hsl(var(--foreground));
   font-family: var(--font-sans, system-ui, -apple-system, "Segoe UI", sans-serif);
-  font-feature-settings: "rlig" 1, "calt" 1;
+  font-feature-settings:
+    "rlig" 1,
+    "calt" 1;
   -webkit-font-smoothing: antialiased;
+}
+
+/* Match the page canvas to the areas Safari exposes at the scroll edges. */
+@media (hover: none) and (pointer: coarse) {
+  html:has(> body > [data-clinic-page]),
+  body:has(> [data-clinic-page]) {
+    background: var(--clinic-graphite);
+    color-scheme: dark;
+  }
+
+  header.site-header-cinematic {
+    /* Keep the color behind the status area without covering the hero. */
+    background: linear-gradient(var(--clinic-graphite), var(--clinic-graphite))
+      top / 100% var(--safe-area-top) no-repeat;
+  }
+
+  /* The floating header occupies only the pill, leaving the photo at the screen edge. */
+  [data-clinic-page]:has(#clinic-rooms) > header {
+    top: calc(var(--safe-area-top) + clamp(.45rem, 1.6vw, 1.25rem));
+    inset-inline: max(.75rem, var(--safe-area-left)) max(.75rem, var(--safe-area-right));
+    padding: 0;
+    background: transparent;
+  }
+
+  [data-clinic-page]:has(#clinic-rooms) .site-header-frame {
+    width: min(100%, 81rem);
+    margin-top: 0;
+    background: rgb(25 27 28 / 36%);
+    backdrop-filter: blur(16px) brightness(72%) saturate(120%);
+  }
+}
+
+/* Preserve the embedded-browser workaround. Safari tabs use the document
+   scroller so the browser can render its scroll-edge effects. */
+@supports (-webkit-touch-callout: none) {
+  @media (max-width: 767px) {
+    html[data-ios-webview] {
+      height: 100dvh;
+      overflow: hidden;
+    }
+
+    html[data-ios-webview] body {
+      height: 100dvh;
+      overflow-x: hidden;
+      overflow-y: auto;
+      overscroll-behavior-y: contain;
+      scroll-behavior: smooth;
+      scroll-padding-top: calc(5rem + var(--safe-area-top));
+      -webkit-overflow-scrolling: touch;
+    }
+  }
+}
+
+/* iOS standalone/in-app browsers can place web content underneath the status
+   bar. The header paints that area while its controls begin below the notch. */
+.site-header {
+  padding-top: var(--safe-area-top);
+  padding-inline: var(--safe-area-left) var(--safe-area-right);
+}
+
+.site-header-cinematic {
+  --background: 210 5% 12%;
+  --foreground: 38 40% 96%;
+  --muted-foreground: 38 19% 84%;
+  --card: 210 4% 17%;
+  --border: 38 14% 39%;
+  --primary: 38 59% 69%;
+  --primary-foreground: 34 35% 11%;
+  --metal: 38 59% 69%;
+  --metal-strong: 39 68% 77%;
+  --soft-shadow: 210 8% 6% / 0.55;
+  color: hsl(var(--foreground));
+}
+
+.site-header-cinematic button {
+  border-color: hsl(var(--border));
+}
+
+.site-wordmark {
+  font-family: var(--font-wordmark, Georgia, serif);
+  font-weight: 400;
+  letter-spacing: -0.045em;
+}
+
+.site-header-frame {
+  width: min(calc(100% - 1.5rem), 81rem);
+  margin-top: clamp(0.45rem, 1.6vw, 1.25rem);
+  border: 1px solid rgb(240 226 201 / 23%);
+  border-radius: 1.2rem;
+  background: rgb(25 27 28 / 84%);
+  box-shadow: 0 8px 40px rgb(12 13 14 / 17%);
+  backdrop-filter: blur(20px) saturate(130%);
+}
+
+.site-menu-cinematic {
+  background: linear-gradient(140deg, #353432, #1b1d1e 72%);
+}
+
+.site-header-spacer {
+  /* Include the header's bottom border so the hero never sits beneath it. */
+  height: calc(4rem + var(--safe-area-top) + 1px);
+}
+
+.site-mobile-overlay {
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: var(--safe-area-top) var(--safe-area-right) var(--safe-area-bottom) var(--safe-area-left);
+}
+
+.site-floating-request,
+.site-booking-chat {
+  right: max(1rem, var(--safe-area-right));
+}
+
+.site-floating-request {
+  bottom: calc(1rem + var(--safe-area-bottom));
+}
+
+.floating-request-button {
+  position: relative;
+  background: linear-gradient(135deg, #ffe4a9, #e3b561);
+  border: 1px solid #765220;
+  color: #281b0c;
+  box-shadow: 0 0 0 4px rgb(210 154 64 / 56%), 0 0 25px 5px rgb(230 171 67 / 42%), 0 7px 18px rgb(26 18 9 / 38%);
+  transition: transform 180ms ease, filter 180ms ease;
+}
+
+.floating-request-button:hover {
+  transform: translateY(-2px);
+  filter: brightness(1.05);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .floating-request-button[aria-expanded="false"]::after {
+    position: absolute;
+    inset: -3px;
+    border: 2px solid #e5b458;
+    border-radius: inherit;
+    pointer-events: none;
+    content: "";
+    animation: floating-request-highlight 3.4s ease-out infinite;
+  }
+}
+
+@keyframes floating-request-highlight {
+  from {
+    opacity: 0.95;
+    scale: 1;
+  }
+  52%, to {
+    opacity: 0;
+    scale: 1.12 1.38;
+  }
+}
+
+.site-booking-chat {
+  bottom: calc(5.25rem + var(--safe-area-bottom));
+  width: min(24rem, calc(100vw - max(1rem, var(--safe-area-left)) - max(1rem, var(--safe-area-right))));
+  height: min(32rem, calc(100dvh - 6rem - var(--safe-area-top) - var(--safe-area-bottom)));
+}
+
+@media (hover: none) and (pointer: coarse) {
+  .site-booking-chat[data-keyboard="open"] {
+    bottom: calc(var(--chat-viewport-bottom) + 0.5rem);
+    height: min(32rem, calc(var(--chat-viewport-height) - var(--safe-area-top) - 1rem));
+  }
+}
+
+@media (max-width: 767px), (hover: none) and (pointer: coarse) {
+  html:has(> body > [data-clinic-page]),
+  html[data-ios-webview] body:has(> [data-clinic-page]) {
+    scroll-padding-bottom: calc(5rem + var(--safe-area-bottom));
+  }
+
+  :is([aria-label="Форма онлайн-записи"], .site-booking-chat)
+    :is(input:not([type="checkbox"]), select, textarea) {
+    font-size: max(1rem, 16px);
+    scroll-margin-block: 0.75rem;
+  }
+}
+
+@media (max-width: 639px) {
+  body:has(:is(#laser-prices, #laser-hair-removal)) .floating-request-button {
+    min-height: 3rem;
+    width: 3rem;
+    justify-content: center;
+    padding-inline: 0;
+  }
+
+  body:has(:is(#laser-prices, #laser-hair-removal)) .floating-request-label {
+    @apply sr-only;
+  }
 }
 
 a,
@@ -129,17 +420,6 @@ textarea {
   font-weight: 500;
 }
 
-/* Subtle filmic grain over the landing for an editorial, premium feel. */
-.landing-page::after {
-  content: "";
-  position: fixed;
-  inset: 0;
-  z-index: 60;
-  pointer-events: none;
-  opacity: 0.035;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
-}
-
 .landing-hero-bg {
   background:
     radial-gradient(circle at 22% 0%, hsl(var(--hero-warm-glow)), transparent 32%),
@@ -163,12 +443,6 @@ textarea {
   background: radial-gradient(circle at 75% 22%, hsl(var(--panel-glow)), transparent 32%);
 }
 
-.hero-editorial-frame {
-  background:
-    linear-gradient(180deg, hsl(var(--card) / 0.1), hsl(var(--card) / 0.96)),
-    hsl(var(--card));
-}
-
 .hero-editorial-image {
   filter: saturate(0.7) contrast(0.96);
 }
@@ -177,25 +451,14 @@ textarea {
   filter: saturate(0.64) contrast(0.95) brightness(1.02);
 }
 
-.hero-editorial-vignette {
-  background:
-    linear-gradient(180deg, hsl(222 14% 8% / 0.05) 40%, hsl(222 14% 8% / 0.72) 82%, hsl(222 14% 8% / 0.86)),
-    radial-gradient(circle at 18% 12%, hsl(var(--hero-warm-glow)), transparent 34%);
-}
-
-.light .hero-editorial-vignette {
-  background:
-    linear-gradient(180deg, hsl(42 55% 96% / 0.02) 38%, hsl(222 14% 8% / 0.6) 80%, hsl(222 14% 8% / 0.8)),
-    radial-gradient(circle at 18% 12%, hsl(var(--hero-warm-glow)), transparent 34%);
-}
-
-.editorial-rule {
-  background: linear-gradient(90deg, hsl(var(--metal) / 0), hsl(var(--metal) / 0.72), hsl(var(--metal) / 0));
-}
-
 .hairline {
   height: 1px;
-  background: linear-gradient(90deg, hsl(var(--border)), hsl(var(--metal) / 0.5), hsl(var(--border)));
+  background: linear-gradient(
+    90deg,
+    hsl(var(--border)),
+    hsl(var(--metal) / 0.5),
+    hsl(var(--border))
+  );
 }
 
 .soft-shadow {
@@ -243,4 +506,14 @@ textarea {
     transform: none;
     transition: none;
   }
+}
+
+/* Hide the scrollbar while keeping the area scrollable. */
+.scrollbar-hidden {
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* legacy Edge/IE */
+}
+
+.scrollbar-hidden::-webkit-scrollbar {
+  display: none; /* Chrome / Safari */
 }

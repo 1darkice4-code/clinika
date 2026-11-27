@@ -6,10 +6,12 @@ import { hashIdempotencyKey } from "@/domain/booking/idempotency";
 import { upsertClient } from "@/domain/client/client.service";
 import { recordConsent } from "@/domain/legal/consent.service";
 import { createLocalNotification } from "@/domain/notification/notification.service";
+import { deliverAppointmentTelegramNotification } from "@/domain/notification/telegram.service";
 import { getAvailableSlotOrThrow } from "@/domain/schedule/schedule.service";
 import { writeAudit } from "@/domain/audit/audit.service";
-import { formatDateInTimezone } from "@/lib/date-time";
-import { ConflictError, NotFoundError } from "@/lib/errors";
+import { formatDateInTimezone, nextDateInTimezone } from "@/lib/date-time";
+import { ConflictError, NotFoundError, ValidationError } from "@/lib/errors";
+import { log } from "@/lib/logger";
 import { prisma } from "@/lib/prisma";
 
 function publicNumber(prefix: "L" | "A") {
@@ -54,7 +56,7 @@ async function recordRequiredConsents(
       tx,
       clientId,
       type: "MARKETING_CONSENT",
-      version: input.legalDocumentVersion,
+      version: input.marketingConsentVersion ?? input.legalDocumentVersion,
       source
     });
   }
@@ -133,35 +135,54 @@ export async function createAppointment(input: CreateAppointmentInput) {
   if (existing) return existing;
 
   try {
-    return await prisma.$transaction(async (tx) => {
+    const appointment = await prisma.$transaction(async (tx) => {
       const service = await tx.service.findFirst({
         where: { id: input.serviceId, isActive: true, deletedAt: null }
       });
       if (!service) throw new NotFoundError("Услуга не найдена");
 
-      const specialistService = await tx.specialistService.findFirst({
-        where: {
-          serviceId: input.serviceId,
-          specialistId: input.specialistId,
-          isActive: true,
-          specialist: { isActive: true, deletedAt: null }
-        }
-      });
-      if (!specialistService) throw new ConflictError("Специалист не оказывает выбранную услугу");
+      // Владелец календаря брони: ресурс (общий аппарат) для resource-bound услуг,
+      // иначе конкретный специалист. Для лазера оператор при записи не выбирается.
+      const resourceId = service.requiresResourceId;
+      let specialistService = null;
+      if (resourceId) {
+        const resource = await tx.resource.findFirst({
+          where: { id: resourceId, isActive: true, deletedAt: null }
+        });
+        if (!resource) throw new ConflictError("Аппарат для услуги недоступен");
+      } else {
+        if (!input.specialistId) throw new ConflictError("Специалист не указан");
+        specialistService = await tx.specialistService.findFirst({
+          where: {
+            serviceId: input.serviceId,
+            specialistId: input.specialistId,
+            isActive: true,
+            specialist: { isActive: true, deletedAt: null }
+          }
+        });
+        if (!specialistService) throw new ConflictError("Специалист не оказывает выбранную услугу");
+      }
 
       const startsAtUtc = new Date(input.startsAtUtc);
       const settings = await tx.clinicSettings.findFirst();
       if (!settings) throw new NotFoundError("Настройки клиники не найдены");
+      const bookingDate = formatDateInTimezone(startsAtUtc, settings.timezone);
+      if (bookingDate < nextDateInTimezone(new Date(), settings.timezone)) {
+        throw new ValidationError("Онлайн-запись доступна начиная с завтрашнего дня");
+      }
       // Ключ лока — дата в часовом поясе клиники, чтобы совпадать с зоной расчёта слотов
       // (иначе на границе UTC-суток два пересекающихся слота берут разные локи → двойная запись).
-      const lockDate = formatDateInTimezone(startsAtUtc, settings.timezone);
+      const lockDate = bookingDate;
+      // Лок берём по владельцу очереди: по аппарату для лазера (единая очередь на всех
+      // операторов), иначе по специалисту.
+      const lockOwnerId = resourceId ?? input.specialistId!;
 
-      await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${input.specialistId}), hashtext(${lockDate}))`;
+      await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${lockOwnerId}), hashtext(${lockDate}))`;
 
       const slot = await getAvailableSlotOrThrow(
         {
           serviceId: input.serviceId,
-          specialistId: input.specialistId,
+          specialistId: resourceId ? undefined : input.specialistId,
           startsAtUtc: input.startsAtUtc
         },
         { tx }
@@ -185,12 +206,13 @@ export async function createAppointment(input: CreateAppointmentInput) {
           publicNumber: publicNumber("A"),
           clientId: client.id,
           serviceId: service.id,
-          specialistId: input.specialistId,
+          specialistId: resourceId ? null : input.specialistId,
+          resourceId: resourceId ?? null,
           startsAtUtc: slot.startsAtUtc,
           endsAtUtc: slot.endsAtUtc,
           clinicTimezone: slot.clinicTimezone,
           priceAtBooking:
-            specialistService.customPriceFrom ?? service.priceExact ?? service.priceFrom,
+            specialistService?.customPriceFrom ?? service.priceExact ?? service.priceFrom,
           currency: service.currency,
           source: attribution.source,
           attributionId: attribution.id,
@@ -230,6 +252,16 @@ export async function createAppointment(input: CreateAppointmentInput) {
 
       return appointment;
     });
+    try {
+      await deliverAppointmentTelegramNotification(appointment.id);
+    } catch (error) {
+      // Notification delivery must never make a successful booking fail.
+      log("error", "Telegram appointment notification setup failed", {
+        appointmentId: appointment.id,
+        error: error instanceof Error ? error.message : error
+      });
+    }
+    return appointment;
   } catch (error) {
     // Гонка идемпотентности: параллельный запрос с тем же ключом успел создать запись.
     if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {

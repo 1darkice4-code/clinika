@@ -4,6 +4,7 @@ import type { Prisma } from "@prisma/client/index";
 import { permissions } from "@/config/permissions";
 import { getCurrentUser } from "@/domain/auth/auth.service";
 import { assertPermission, hasPermission } from "@/domain/auth/rbac";
+import { performerLabel } from "@/domain/appointment/appointment-labels";
 import { appointmentStatusClasses, appointmentStatusLabels } from "@/domain/crm/status-labels";
 import { Card } from "@/components/ui/card";
 import { Select } from "@/components/ui/input";
@@ -63,16 +64,16 @@ function workRangesFor(start: string, end: string, breaks: Break[]): { start: nu
   return ranges;
 }
 
-function calendarHref(week: string, specialistId?: string) {
+function calendarHref(week: string, owner?: string) {
   const params = new URLSearchParams({ week });
-  if (specialistId) params.set("specialistId", specialistId);
+  if (owner) params.set("owner", owner);
   return `/admin/calendar?${params.toString()}`;
 }
 
 export default async function CalendarPage({
   searchParams
 }: {
-  searchParams: Promise<{ week?: string; specialistId?: string }>;
+  searchParams: Promise<{ week?: string | string[]; owner?: string | string[] }>;
 }) {
   const user = await getCurrentUser();
   assertPermission(user, permissions.scheduleRead);
@@ -81,7 +82,15 @@ export default async function CalendarPage({
   const settings = await prisma.clinicSettings.findFirst();
   const timezone = settings?.timezone ?? "Asia/Chita";
 
-  const { week, specialistId } = await searchParams;
+  const params = await searchParams;
+  // Дублированный query-параметр приходит массивом — берём первую строку.
+  const firstString = (value: string | string[] | undefined) =>
+    Array.isArray(value) ? value[0] : value;
+  const week = firstString(params.week);
+  const owner = firstString(params.owner);
+  // Владелец календаря: "s:<id>" — специалист, "r:<id>" — аппарат (ресурс).
+  const ownerResourceId = owner?.startsWith("r:") ? owner.slice(2) : undefined;
+  const ownerSpecialistId = owner?.startsWith("s:") ? owner.slice(2) : undefined;
   const mondayKey = resolveWeekMonday(week, timezone);
   const dayKeys = weekDateKeys(mondayKey);
   const weekEndKey = addDaysKey(mondayKey, 7);
@@ -107,26 +116,48 @@ export default async function CalendarPage({
     );
   }
 
-  // Manager can filter by specialist; a specialist is always scoped to themselves.
-  const specialists = specialistScoped
-    ? []
-    : await prisma.specialist.findMany({
-        where: { deletedAt: null },
-        orderBy: [{ sortOrder: "asc" }, { lastName: "asc" }],
-        select: { id: true, firstName: true, lastName: true }
-      });
+  // Manager can filter by specialist or by shared resource; a specialist login is
+  // always scoped to themselves.
+  const [specialists, resources] = specialistScoped
+    ? [[], []]
+    : await Promise.all([
+        prisma.specialist.findMany({
+          where: { deletedAt: null },
+          orderBy: [{ sortOrder: "asc" }, { lastName: "asc" }],
+          select: { id: true, firstName: true, lastName: true }
+        }),
+        prisma.resource.findMany({
+          where: { deletedAt: null },
+          orderBy: [{ sortOrder: "asc" }, { name: "asc" }],
+          select: { id: true, name: true }
+        })
+      ]);
+
+  const selectedResourceId =
+    !specialistScoped && ownerResourceId && resources.some((item) => item.id === ownerResourceId)
+      ? ownerResourceId
+      : undefined;
 
   const selectedSpecialistId = specialistScoped
     ? user.specialistId!
-    : specialistId && specialists.some((item) => item.id === specialistId)
-      ? specialistId
+    : !selectedResourceId && ownerSpecialistId && specialists.some((item) => item.id === ownerSpecialistId)
+      ? ownerSpecialistId
       : undefined;
 
-  const scopeFilter: Prisma.AppointmentWhereInput = selectedSpecialistId
-    ? { specialistId: selectedSpecialistId }
-    : {};
+  // Значение выбранного владельца для селекта и ссылок навигации.
+  const selectedOwnerValue = selectedResourceId
+    ? `r:${selectedResourceId}`
+    : selectedSpecialistId
+      ? `s:${selectedSpecialistId}`
+      : undefined;
 
-  const [appointments, timeBlocks, workSchedules] = await Promise.all([
+  const scopeFilter: Prisma.AppointmentWhereInput = selectedResourceId
+    ? { resourceId: selectedResourceId }
+    : selectedSpecialistId
+      ? { specialistId: selectedSpecialistId }
+      : {};
+
+  const [appointments, timeBlocks, resourceBlocks, workSchedules] = await Promise.all([
     prisma.appointment.findMany({
       where: {
         ...scopeFilter,
@@ -135,23 +166,38 @@ export default async function CalendarPage({
         status: { notIn: ["CANCELLED_BY_CLIENT", "CANCELLED_BY_CLINIC"] }
       },
       orderBy: { startsAtUtc: "asc" },
-      include: { client: true, service: true, specialist: true }
+      include: { client: true, service: true, specialist: true, resource: true }
     }),
-    prisma.timeBlock.findMany({
-      where: {
-        ...(selectedSpecialistId ? { specialistId: selectedSpecialistId } : {}),
-        startsAtUtc: { lt: rangeEnd },
-        endsAtUtc: { gt: rangeStart }
-      },
-      include: { specialist: true }
-    }),
-    // Work-hours shading only makes sense for a single specialist.
-    selectedSpecialistId
-      ? prisma.workSchedule.findMany({ where: { specialistId: selectedSpecialistId, isActive: true } })
-      : Promise.resolve([])
+    // Specialist blocks: skip entirely when viewing a resource calendar.
+    selectedResourceId
+      ? Promise.resolve([])
+      : prisma.timeBlock.findMany({
+          where: {
+            ...(selectedSpecialistId ? { specialistId: selectedSpecialistId } : {}),
+            startsAtUtc: { lt: rangeEnd },
+            endsAtUtc: { gt: rangeStart }
+          },
+          include: { specialist: true }
+        }),
+    // Resource blocks: only when viewing a specific resource calendar.
+    selectedResourceId
+      ? prisma.resourceTimeBlock.findMany({
+          where: {
+            resourceId: selectedResourceId,
+            startsAtUtc: { lt: rangeEnd },
+            endsAtUtc: { gt: rangeStart }
+          }
+        })
+      : Promise.resolve([]),
+    // Work-hours shading only makes sense for a single owner.
+    selectedResourceId
+      ? prisma.resourceWorkSchedule.findMany({ where: { resourceId: selectedResourceId, isActive: true } })
+      : selectedSpecialistId
+        ? prisma.workSchedule.findMany({ where: { specialistId: selectedSpecialistId, isActive: true } })
+        : Promise.resolve([])
   ]);
 
-  const showSpecialistInEvent = !selectedSpecialistId;
+  const showSpecialistInEvent = !selectedSpecialistId && !selectedResourceId;
 
   const events: CalendarEvent[] = [];
   for (const appointment of appointments) {
@@ -166,9 +212,9 @@ export default async function CalendarPage({
       endMinutes,
       title: `${appointment.client.firstName} ${appointment.client.lastName ?? ""}`.trim(),
       subtitle: showSpecialistInEvent
-        ? `${appointment.service.name} · ${appointment.specialist.firstName} ${appointment.specialist.lastName}`
+        ? `${appointment.service.name} · ${performerLabel(appointment)}`
         : appointment.service.name,
-      meta: `${appointment.specialist.firstName} ${appointment.specialist.lastName} · ${appointment.client.phone}`,
+      meta: `${performerLabel(appointment)} · ${appointment.client.phone}`,
       statusLabel: appointmentStatusLabels[appointment.status],
       statusClass: appointmentStatusClasses[appointment.status],
       kind: "appointment",
@@ -191,6 +237,25 @@ export default async function CalendarPage({
         title: "Занято",
         subtitle: block.reason,
         meta: showSpecialistInEvent ? `${block.specialist.firstName} ${block.specialist.lastName}` : undefined,
+        statusLabel: "Блокировка",
+        statusClass: "",
+        kind: "block"
+      });
+    }
+  }
+
+  for (const block of resourceBlocks) {
+    const startDayKey = zonedDayKey(block.startsAtUtc, timezone);
+    const endDayKey = zonedDayKey(block.endsAtUtc, timezone);
+    for (const dayKey of dayKeys) {
+      if (dayKey < startDayKey || dayKey > endDayKey) continue;
+      events.push({
+        id: `rblock-${block.id}-${dayKey}`,
+        dayKey,
+        startMinutes: dayKey === startDayKey ? zonedMinutes(block.startsAtUtc, timezone) : 0,
+        endMinutes: dayKey === endDayKey ? zonedMinutes(block.endsAtUtc, timezone) : 24 * 60,
+        title: "Занято",
+        subtitle: block.reason,
         statusLabel: "Блокировка",
         statusClass: "",
         kind: "block"
@@ -222,9 +287,9 @@ export default async function CalendarPage({
   const dayStartMinutes = Math.max(0, Math.min(...starts));
   const dayEndMinutes = Math.min(24 * 60, Math.max(...ends));
 
-  const prevHref = calendarHref(addDaysKey(mondayKey, -7), selectedSpecialistId);
-  const nextHref = calendarHref(addDaysKey(mondayKey, 7), selectedSpecialistId);
-  const todayHref = calendarHref(resolveWeekMonday(todayKey, timezone), selectedSpecialistId);
+  const prevHref = calendarHref(addDaysKey(mondayKey, -7), selectedOwnerValue);
+  const nextHref = calendarHref(addDaysKey(mondayKey, 7), selectedOwnerValue);
+  const todayHref = calendarHref(resolveWeekMonday(todayKey, timezone), selectedOwnerValue);
 
   return (
     <div>
@@ -240,17 +305,28 @@ export default async function CalendarPage({
             <form method="get" className="flex items-center gap-2">
               <input type="hidden" name="week" value={mondayKey} />
               <Select
-                name="specialistId"
-                aria-label="Специалист"
-                defaultValue={selectedSpecialistId ?? ""}
+                name="owner"
+                aria-label="Специалист или аппарат"
+                defaultValue={selectedOwnerValue ?? ""}
                 className="w-56"
               >
-                <option value="">Все специалисты</option>
-                {specialists.map((specialist) => (
-                  <option key={specialist.id} value={specialist.id}>
-                    {specialist.firstName} {specialist.lastName}
-                  </option>
-                ))}
+                <option value="">Все</option>
+                <optgroup label="Специалисты">
+                  {specialists.map((specialist) => (
+                    <option key={specialist.id} value={`s:${specialist.id}`}>
+                      {specialist.firstName} {specialist.lastName}
+                    </option>
+                  ))}
+                </optgroup>
+                {resources.length > 0 && (
+                  <optgroup label="Аппараты">
+                    {resources.map((resource) => (
+                      <option key={resource.id} value={`r:${resource.id}`}>
+                        {resource.name}
+                      </option>
+                    ))}
+                  </optgroup>
+                )}
               </Select>
               <button type="submit" className="h-11 rounded-md border bg-card px-3 text-sm font-medium hover:bg-muted">
                 Показать

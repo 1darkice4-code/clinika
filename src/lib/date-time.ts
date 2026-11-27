@@ -28,6 +28,17 @@ export function formatDateInTimezone(date: Date, timezone: string): string {
   return `${year}-${month}-${day}`;
 }
 
+export function addDaysToDateKey(dateKey: string, days: number): string {
+  const [year, month, day] = dateKey.split("-").map(Number);
+  if (!year || !month || !day) throw new Error(`Некорректная дата ${dateKey}`);
+  const date = new Date(Date.UTC(year, month - 1, day + days));
+  return date.toISOString().slice(0, 10);
+}
+
+export function nextDateInTimezone(now: Date, timezone: string): string {
+  return addDaysToDateKey(formatDateInTimezone(now, timezone), 1);
+}
+
 /** Дата и время в часовом поясе клиники, напр. "07.07.2026, 16:00". */
 export function formatClinicDateTime(date: Date, timezone: string): string {
   return new Intl.DateTimeFormat("ru-RU", {

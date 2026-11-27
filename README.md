@@ -30,13 +30,10 @@ npm run dev
 
 CRM: http://localhost:3000/admin
 
-Development users:
-
-- `owner@clinika.test / DevPassword123!`
-- `admin@clinika.test / DevPassword123!`
-- `specialist@clinika.test / DevPassword123!`
-
-Эти учетные данные предназначены только для development.
+Перед запуском seed задайте уникальные `SEED_OWNER_PASSWORD`, `SEED_ADMIN_PASSWORD` и
+`SEED_SPECIALIST_PASSWORD` в `.env`. Seed отклоняет отсутствующие или короткие пароли и не выводит
+их в лог. Пользователи создаются с адресами `owner@clinika.test`, `admin@clinika.test` и
+`specialist@clinika.test`.
 
 ## Основные команды
 

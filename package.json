@@ -15,6 +15,10 @@
     "db:migrate": "prisma migrate dev",
     "db:deploy": "prisma migrate deploy",
     "db:seed": "tsx prisma/seed.ts",
+    "legal:publish": "tsx scripts/publish-legal-documents.ts",
+    "specialist:publish": "tsx scripts/publish-featured-specialist.ts",
+    "reviews:publish": "tsx scripts/publish-featured-reviews.ts",
+    "pricing:publish": "tsx scripts/publish-current-price-list.ts",
     "db:reset": "prisma migrate reset --force",
     "test": "vitest run",
     "test:watch": "vitest",
@@ -36,6 +40,8 @@
     "react-dom": "latest",
     "react-hook-form": "latest",
     "tailwind-merge": "latest",
+    "three": "^0.187.0",
+    "undici": "^7.13.0",
     "zod": "latest"
   },
   "devDependencies": {
@@ -46,9 +52,10 @@
     "@types/papaparse": "latest",
     "@types/react": "latest",
     "@types/react-dom": "latest",
+    "@types/three": "^0.187.0",
     "autoprefixer": "^10.4.21",
     "dotenv": "^16.6.1",
-    "eslint": "latest",
+    "eslint": "9.39.2",
     "eslint-config-next": "latest",
     "jsdom": "latest",
     "postcss": "^8.5.6",
@@ -56,7 +63,7 @@
     "prisma": "^6.19.3",
     "tailwindcss": "^3.4.17",
     "tsx": "latest",
-    "typescript": "latest",
+    "typescript": "6.0.3",
     "vitest": "latest"
   }
 }

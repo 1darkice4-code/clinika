@@ -45,9 +45,6 @@ export type AvailableSlot = {
   endsAtUtc: Date;
 };
 
-/** Standard booking slot length in minutes (fixed one-hour grid). */
-export const STANDARD_SLOT_MINUTES = 60;
-
 /** A slot in the full day grid, including ones that are already taken. */
 export type GridSlot = {
   startsAtUtc: Date;
@@ -65,7 +62,9 @@ export type SlotGridInput = {
   busyIntervals: BusyInterval[];
   minLeadMinutes: number;
   maxHorizonDays: number;
-  slotMinutes?: number;
+  durationMinutes: number;
+  bufferBeforeMinutes: number;
+  bufferAfterMinutes: number;
   now?: Date;
 };
 
@@ -194,32 +193,43 @@ export function calculateAvailableSlots(input: SlotCalculationInput): AvailableS
 }
 
 /**
- * Builds the full fixed-length grid (default one hour) for each day and marks
- * every slot available or not. Unlike {@link calculateAvailableSlots}, taken
- * slots are kept in the result (with `available: false`) so the UI can show
- * them disabled instead of hiding them.
+ * Builds the day grid for a given service and marks every slot available or not.
+ * Slot length is the service `durationMinutes`; consecutive starts are spaced by
+ * `duration + bufferBefore + bufferAfter` so each visit keeps its prep/cleanup gap.
+ * `endsAtUtc` is the honest visit end (`start + duration`, buffers excluded) — the
+ * value stored on the appointment. Unlike {@link calculateAvailableSlots}, taken
+ * slots are kept (with `available: false`) so the UI can show them disabled.
  */
 export function calculateSlotGrid(input: SlotGridInput): GridSlot[] {
   const now = input.now ?? new Date();
   const minStart = addMinutes(now, input.minLeadMinutes);
   const maxStart = addMinutes(now, input.maxHorizonDays * 24 * 60);
-  const slotMinutes = input.slotMinutes ?? STANDARD_SLOT_MINUTES;
+  const { durationMinutes, bufferBeforeMinutes, bufferAfterMinutes } = input;
+  const step = durationMinutes + bufferBeforeMinutes + bufferAfterMinutes;
   const busy: Interval[] = input.busyIntervals.map((item) => ({
     start: item.startsAtUtc,
     end: item.endsAtUtc
   }));
 
   const grid: GridSlot[] = [];
+  if (durationMinutes <= 0 || step <= 0) return grid;
 
   for (const date of eachDate(input.dateFrom, input.dateTo)) {
     for (const interval of getDayIntervals(input, date)) {
-      let start = interval.start;
-      while (addMinutes(start, slotMinutes) <= interval.end) {
-        const end = addMinutes(start, slotMinutes);
+      // First start leaves room for the prep buffer; loop while the visit plus its
+      // cleanup buffer still fits inside the working interval.
+      let start = addMinutes(interval.start, bufferBeforeMinutes);
+      while (addMinutes(start, durationMinutes + bufferAfterMinutes) <= interval.end) {
+        const end = addMinutes(start, durationMinutes);
+        // Guarded span (prep..cleanup) must be clear of existing appointments/blocks.
+        const guarded = {
+          start: addMinutes(start, -bufferBeforeMinutes),
+          end: addMinutes(end, bufferAfterMinutes)
+        };
         const withinBounds = start >= minStart && start <= maxStart;
-        const isBusy = busy.some((blocker) => overlaps({ start, end }, blocker));
+        const isBusy = busy.some((blocker) => overlaps(guarded, blocker));
         grid.push({ startsAtUtc: start, endsAtUtc: end, available: withinBounds && !isBusy });
-        start = addMinutes(start, slotMinutes);
+        start = addMinutes(start, step);
       }
     }
   }

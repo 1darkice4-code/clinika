@@ -3,6 +3,8 @@ import { permissions } from "@/config/permissions";
 import { getCurrentUser } from "@/domain/auth/auth.service";
 import { assertPermission } from "@/domain/auth/rbac";
 import { writeAudit } from "@/domain/audit/audit.service";
+import { assertResourceExists, assertSpecialistExists } from "@/app/api/admin/resources/validate";
+import { ValidationError } from "@/lib/errors";
 import { jsonError, jsonOk } from "@/lib/http";
 import { prisma } from "@/lib/prisma";
 
@@ -18,8 +20,10 @@ const scheduleSchema = z.object({
   ).default([])
 });
 
+// Владелец расписания — специалист или общий ресурс (аппарат). Ровно один из двух.
 const schema = z.object({
-  specialistId: z.string().min(1),
+  specialistId: z.string().min(1).optional(),
+  resourceId: z.string().min(1).optional(),
   schedules: z.array(scheduleSchema).min(1)
 });
 
@@ -28,12 +32,41 @@ export async function PUT(request: Request) {
     const user = await getCurrentUser();
     assertPermission(user, permissions.scheduleWrite);
     const input = schema.parse(await request.json());
+    if (Boolean(input.specialistId) === Boolean(input.resourceId)) {
+      throw new ValidationError("Укажите либо специалиста, либо ресурс");
+    }
+    await assertResourceExists(input.resourceId);
+    await assertSpecialistExists(input.specialistId);
 
     await prisma.$transaction(async (tx) => {
-      await tx.workSchedule.deleteMany({ where: { specialistId: input.specialistId } });
+      if (input.resourceId) {
+        const resourceId = input.resourceId;
+        await tx.resourceWorkSchedule.deleteMany({ where: { resourceId } });
+        await tx.resourceWorkSchedule.createMany({
+          data: input.schedules.map((schedule) => ({
+            resourceId,
+            weekday: schedule.weekday,
+            startsAtLocalTime: schedule.startsAtLocalTime,
+            endsAtLocalTime: schedule.endsAtLocalTime,
+            breaksJson: schedule.breaksJson
+          }))
+        });
+        await writeAudit({
+          tx,
+          userId: user?.id,
+          action: "schedule.work_schedule.replace",
+          entityType: "Resource",
+          entityId: resourceId,
+          description: "Рабочее расписание аппарата обновлено"
+        });
+        return;
+      }
+
+      const specialistId = input.specialistId!;
+      await tx.workSchedule.deleteMany({ where: { specialistId } });
       await tx.workSchedule.createMany({
         data: input.schedules.map((schedule) => ({
-          specialistId: input.specialistId,
+          specialistId,
           weekday: schedule.weekday,
           startsAtLocalTime: schedule.startsAtLocalTime,
           endsAtLocalTime: schedule.endsAtLocalTime,
@@ -45,7 +78,7 @@ export async function PUT(request: Request) {
         userId: user?.id,
         action: "schedule.work_schedule.replace",
         entityType: "Specialist",
-        entityId: input.specialistId,
+        entityId: specialistId,
         description: "Рабочее расписание специалиста обновлено"
       });
     });

@@ -14,11 +14,16 @@ export default async function AdminServicesPage() {
   assertPermission(user, permissions.contentRead);
   const canWrite = Boolean(user?.permissions.includes(permissions.contentWrite));
 
-  const [categories, services] = await Promise.all([
+  const [categories, services, resources] = await Promise.all([
     prisma.serviceCategory.findMany({ where: { deletedAt: null }, orderBy: { sortOrder: "asc" } }),
     prisma.service.findMany({
       where: { deletedAt: null },
       include: { category: true, specialistServices: true },
+      orderBy: [{ sortOrder: "asc" }, { name: "asc" }]
+    }),
+    prisma.resource.findMany({
+      where: { deletedAt: null, isActive: true },
+      select: { id: true, name: true },
       orderBy: [{ sortOrder: "asc" }, { name: "asc" }]
     })
   ]);
@@ -33,7 +38,7 @@ export default async function AdminServicesPage() {
 
       {canWrite ? (
         <div className="mt-6">
-          <ServiceManager categories={categories} services={services} />
+          <ServiceManager categories={categories} services={services} resources={resources} />
         </div>
       ) : (
         <div className="mt-6 grid gap-4">

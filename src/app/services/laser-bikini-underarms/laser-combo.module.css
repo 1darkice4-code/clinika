@@ -1,0 +1,173 @@
+.hero {
+  background: var(--night);
+  color: var(--white);
+}
+
+.heroGrid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  align-items: center;
+  gap: clamp(1.75rem, 5vw, 5rem);
+  padding-block: calc(clamp(7rem, 10vw, 9.5rem) + var(--safe-area-top)) clamp(2rem, 5vw, 4rem);
+}
+
+.offer {
+  min-width: 0;
+}
+
+.back,
+.address {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: #e7dfd0;
+  font-size: 0.875rem;
+  text-decoration: underline;
+  text-underline-offset: 0.24em;
+}
+
+.back svg,
+.address svg {
+  flex: none;
+}
+
+.title {
+  margin: clamp(1rem, 3vw, 2rem) 0 0;
+  color: var(--white);
+  font-family: var(--font-wordmark, Georgia, serif);
+  font-size: clamp(2.25rem, 4.4vw, 5.25rem);
+  font-weight: 400;
+  line-height: 1.11;
+  letter-spacing: -0.04em;
+}
+
+.subtitle {
+  margin-block: 1rem 1.35rem;
+  color: #e7dfd0;
+}
+
+.ticket {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 0.5rem 0.9rem;
+  padding-block: 0.8rem;
+  border-block: 1px solid rgb(223 189 130 / 42%);
+  font-size: 0.875rem;
+}
+
+.ticket strong {
+  color: var(--brass);
+  font-size: clamp(1.8rem, 3vw, 2.55rem);
+  font-weight: 600;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.duration {
+  margin-inline-start: auto;
+  color: #e7dfd0;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 1rem 1.35rem;
+  margin-top: 1.35rem;
+}
+
+.room {
+  position: relative;
+  align-self: stretch;
+  min-height: 23rem;
+  margin: 0;
+  overflow: hidden;
+  background: #47433b;
+  border-radius: 1rem;
+}
+
+.room img {
+  object-fit: cover;
+  object-position: center 56%;
+}
+
+.details {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: clamp(1.75rem, 5vw, 5rem);
+  padding-block: clamp(2rem, 6vw, 5rem);
+}
+
+.specialist {
+  display: grid;
+  grid-template-columns: minmax(0, 9.5rem) minmax(0, 1fr);
+  align-items: center;
+  gap: clamp(0.9rem, 2.4vw, 2rem);
+}
+
+.specialist img {
+  width: 100%;
+  height: auto;
+  aspect-ratio: 4 / 5;
+  border-radius: 0.75rem;
+  object-fit: cover;
+  object-position: center 42%;
+}
+
+.details h2 {
+  margin-block: 0.3rem 0.75rem;
+  font-size: clamp(1.45rem, 2.6vw, 2.4rem);
+  font-weight: 550;
+  letter-spacing: -0.035em;
+  line-height: 1.15;
+}
+
+.details p,
+.visit ul {
+  color: var(--muted);
+  line-height: 1.6;
+}
+
+.specialist a,
+.visit a {
+  margin-top: 0.85rem;
+}
+
+.visit ul {
+  display: grid;
+  gap: 0.5rem;
+  margin-block: 0 0.5rem;
+  padding-inline-start: 1.1rem;
+  list-style: disc;
+}
+
+@media (max-width: 759px) {
+  .heroGrid,
+  .details {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .heroGrid {
+    padding-top: calc(6.2rem + var(--safe-area-top));
+  }
+
+  .room {
+    min-height: clamp(12rem, 54vw, 25rem);
+  }
+
+  .visit {
+    border-top: 1px solid var(--line);
+    padding-top: 1.6rem;
+  }
+}
+
+@media (max-width: 420px) {
+  .specialist {
+    grid-template-columns: minmax(0, 30%) minmax(0, 1fr);
+  }
+
+  .duration {
+    width: 100%;
+  }
+}

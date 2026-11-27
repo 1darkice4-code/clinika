@@ -13,6 +13,30 @@ export const attributionSchema = z.object({
 
 export type AttributionInput = z.infer<typeof attributionSchema>;
 
+const campaignFields = {
+  utm_source: "utmSource",
+  utm_medium: "utmMedium",
+  utm_campaign: "utmCampaign",
+  utm_content: "utmContent",
+  utm_term: "utmTerm"
+} as const;
+
+export function readCampaignQuery(query: Record<string, string | string[] | undefined>) {
+  const params = new URLSearchParams();
+  const attribution: AttributionInput = {};
+  for (const [param, field] of Object.entries(campaignFields)) {
+    const value = query[param];
+    const parsed = attributionSchema.shape[field].safeParse(
+      typeof value === "string" ? value.trim() : undefined
+    );
+    if (parsed.success && parsed.data) {
+      params.set(param, parsed.data);
+      attribution[field] = parsed.data;
+    }
+  }
+  return { attribution, params };
+}
+
 export function inferSource(input: AttributionInput): string {
   if (input.utmSource) return input.utmSource;
   if (input.referrer) {
