@@ -1,10 +1,11 @@
 import type { MetadataRoute } from "next";
 import { CLINIC_SITE_URL as appUrl } from "@/config/clinic";
-import { LASER_SERVICES } from "@/domain/service/current-price-list";
+import { LASER_COMBO } from "@/domain/service/laser-combo";
 import { prisma } from "@/lib/prisma";
 
-// Страницы зон лазерной эпиляции закрыты noindex — в sitemap их не отдаём.
-const laserZoneSlugs = new Set<string>(LASER_SERVICES.map((service) => service.slug));
+// Страницы отдельных услуг (/services/[slug]) закрыты noindex — в sitemap их не отдаём.
+// Исключение — комплекс лазерной эпиляции, у него собственная страница.
+const indexableServiceSlugs = new Set<string>([LASER_COMBO.slug]);
 
 export const dynamic = "force-dynamic";
 
@@ -29,7 +30,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${appUrl}/lazernaya-epilyatsiya` },
     { url: `${appUrl}/prices` },
     { url: `${appUrl}/booking` },
-    ...services.filter((service) => !laserZoneSlugs.has(service.slug)).map((service) => ({
+    ...services.filter((service) => indexableServiceSlugs.has(service.slug)).map((service) => ({
       url: `${appUrl}/services/${service.slug}`,
       lastModified: service.updatedAt
     })),

@@ -137,7 +137,13 @@
   animation: sparkArrival 1.2s 250ms cubic-bezier(0.15, 0.7, 0.3, 1) both;
 }
 
+.heroHeading {
+  margin: 0;
+  font: inherit;
+}
+
 .heroTitle {
+  display: block;
   margin: 0.58rem 0 0.08rem -0.04em;
   color: #fffdf8;
   font-family: var(--font-wordmark, Georgia, serif);

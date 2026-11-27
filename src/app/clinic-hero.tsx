@@ -93,14 +93,16 @@ export function ClinicHero({ address }: { address: string }) {
       <div className={styles.heroLight} aria-hidden="true" />
       <div className={styles.heroContent}>
         <div className={styles.heroCopy}>
-          <p className={styles.eyebrow}>
-            <span className={styles.brandSpark} aria-hidden="true" /> Клиника эстетической медицины
-          </p>
-          <h1 id="home-title" className={styles.heroTitle} aria-label={brand}>
-            <span className={styles.heroWord} aria-hidden="true">
-              {Array.from(brand, (letter, index) => (
-                <span key={index}>{letter}</span>
-              ))}
+          <h1 id="home-title" className={styles.heroHeading} aria-label={`Клиника эстетической медицины «${brand}»`}>
+            <span className={styles.eyebrow}>
+              <span className={styles.brandSpark} aria-hidden="true" /> Клиника эстетической медицины
+            </span>{" "}
+            <span className={styles.heroTitle}>
+              <span className={styles.heroWord} aria-hidden="true">
+                {Array.from(brand, (letter, index) => (
+                  <span key={index}>{letter}</span>
+                ))}
+              </span>
             </span>
           </h1>
           <p className={styles.heroDescription}>Косметология, лазерная эпиляция и массаж в Чите.</p>

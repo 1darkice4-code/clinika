@@ -107,7 +107,8 @@ type Price = { priceExact: number | null; priceFrom: number | null };
 function priceFloor(services: Price[]) {
   const prices = services.flatMap((service) => {
     const price = service.priceExact ?? service.priceFrom;
-    return price === null ? [] : [price];
+    // Бесплатные услуги (например, повторный приём) не должны давать «от 0 ₽».
+    return price === null || price <= 0 ? [] : [price];
   });
   return prices.length ? formatPrice(Math.min(...prices)) : "Уточнить цену";
 }
@@ -152,6 +153,9 @@ export default async function HomePage({
   const cosmeticServices = services.filter(
     (service) => !service.requiresResourceId && !massageServices.includes(service)
   );
+  // Цена за 1 единицу препарата (например, «Диспорт (1 ед.)») — не цена процедуры,
+  // поэтому для «Косметология от …» её не учитываем.
+  const cosmeticProcedurePrices = cosmeticServices.filter((service) => !/\(1 ед\.\)/.test(service.name));
   const laserPrice = priceFloor(
     LASER_SERVICES.map(({ prices }) => ({ priceExact: prices.one, priceFrom: null }))
   );
@@ -213,7 +217,7 @@ export default async function HomePage({
                   </span>
                   <span className={styles.serviceInfo}>
                     <span className={styles.serviceName}>Косметология</span>
-                    <span className={styles.servicePrice}>{priceFloor(cosmeticServices)}</span>
+                    <span className={styles.servicePrice}>{priceFloor(cosmeticProcedurePrices)}</span>
                   </span>
                   <span className={styles.serviceIcon}>
                     <Plus aria-hidden="true" size={20} />

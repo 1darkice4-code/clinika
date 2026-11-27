@@ -2,7 +2,7 @@ import { expect, test } from "@playwright/test";
 
 test("public landing links to a separate booking page", async ({ page }) => {
   await page.goto("/");
-  await expect(page.getByRole("heading", { level: 1, name: "Сияние", exact: true })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: "Клиника эстетической медицины «Сияние»", exact: true })).toBeVisible();
   await expect(page.getByRole("form", { name: "Форма онлайн-записи" })).toHaveCount(0);
   await page
     .getByTestId("site-header")

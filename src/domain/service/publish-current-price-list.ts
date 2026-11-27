@@ -15,9 +15,9 @@ function laserDescription(item: LaserPriceItem) {
 }
 
 function cosmetologyDescription(item: CosmetologyPriceItem, categoryName: string) {
-  return item.priceExact === null
-    ? `${categoryName}. Стоимость уточняется у администратора.`
-    : `${categoryName}. Стоимость услуги — ${item.priceExact.toLocaleString("ru-RU")} ₽.`;
+  if (item.priceExact === null) return `${categoryName}. Стоимость уточняется у администратора.`;
+  if (item.priceExact === 0) return `${categoryName}. Услуга бесплатная.`;
+  return `${categoryName}. Стоимость услуги — ${item.priceExact.toLocaleString("ru-RU")} ₽.`;
 }
 
 export async function publishCurrentPriceList(prisma: PrismaClient) {

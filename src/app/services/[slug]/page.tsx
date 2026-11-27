@@ -9,8 +9,10 @@ import { LASER_SERVICES } from "@/domain/service/current-price-list";
 import { prisma } from "@/lib/prisma";
 import { formatPrice } from "@/lib/utils";
 
-// Отдельные страницы зон лазерной эпиляции дублируют прайс основной страницы.
-// Закрываем их от индексации, чтобы поисковик продвигал /lazernaya-epilyatsiya.
+// Страницы отдельных услуг — это одна строка прайса (цена и длительность) и почти
+// дублируют друг друга. Закрываем их от индексации (noindex, follow), чтобы поисковики
+// продвигали /lazernaya-epilyatsiya и /prices, а не десятки «малоценных» страниц.
+// Комплекс laser-bikini-underarms имеет собственную страницу и индексируется.
 const laserZoneSlugs = new Set<string>(LASER_SERVICES.map((service) => service.slug));
 
 type PageProps = {
@@ -28,7 +30,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     title: service.seoMetadata?.title ?? service.name,
     description: service.seoMetadata?.description ?? service.shortDescription,
     alternates: { canonical: `/services/${service.slug}` },
-    ...(laserZoneSlugs.has(service.slug) ? { robots: { index: false, follow: true } } : {})
+    robots: { index: false, follow: true }
   };
 }
 
@@ -56,7 +58,12 @@ export default async function ServicePage({ params }: PageProps) {
             ← Лазерная эпиляция: все зоны и цены
           </Link>
         ) : (
-          <Badge>{service.category.name}</Badge>
+          <div className="flex flex-wrap items-center gap-3">
+            <Link href="/prices" className="text-sm text-primary">
+              ← Все услуги и цены
+            </Link>
+            <Badge>{service.category.name}</Badge>
+          </div>
         )}
         <h1 className="mt-4 text-4xl font-semibold">{service.name}</h1>
         <p className="mt-4 text-lg text-muted-foreground">{service.shortDescription}</p>
