@@ -3,12 +3,12 @@ import { ArrowDown, ArrowUpRight, MapPin, Phone } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { getPublicLaserPricing } from "@/domain/booking/public-catalog";
-import { CLINIC_SITE_URL } from "@/config/clinic";
 import { buildDirectionsUrl } from "@/lib/map";
 import { formatPrice } from "@/lib/utils";
 import { ClinicPage } from "../clinic-page";
 import styles from "../clinic-pages.module.css";
 import home from "../home.module.css";
+import { RelatedDirections } from "@/components/direction/direction-landing";
 import { LaserPriceList } from "@/components/pricing/laser-price-list";
 import {
   aftercare,
@@ -20,7 +20,7 @@ import {
   questions,
   whoFits
 } from "./content";
-import laser from "./laser.module.css";
+import laser from "../direction.module.css";
 import { buildLaserStructuredData, serializeJsonLd } from "./structured-data";
 
 const title = "Лазерная эпиляция в Чите";
@@ -56,7 +56,7 @@ export default async function LaserHairRemovalPage() {
   } = await getPublicLaserPricing();
 
   const structuredData = buildLaserStructuredData({
-    pageUrl: `${CLINIC_SITE_URL}/lazernaya-epilyatsiya`,
+    path: "/lazernaya-epilyatsiya",
     title,
     description,
     phone,
@@ -237,6 +237,8 @@ export default async function LaserHairRemovalPage() {
               </a>
             </div>
           </section>
+
+          <RelatedDirections currentPath="/lazernaya-epilyatsiya" />
 
           <p className={laser.medicalWarning} role="note">{MEDICAL_WARNING}</p>
         </div>

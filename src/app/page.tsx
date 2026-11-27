@@ -5,7 +5,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { CLINIC_CONTACTS, CLINIC_SITE_URL } from "@/config/clinic";
 import { FEATURED_REVIEW_SOURCE_URL } from "@/domain/review/featured-reviews";
-import { LASER_SERVICES } from "@/domain/service/current-price-list";
+import { LASER_SERVICES, PER_UNIT_PRICE_SLUGS } from "@/domain/service/current-price-list";
 import { FEATURED_SPECIALIST } from "@/domain/specialist/featured-specialist";
 import { buildDirectionsUrl, buildMapEmbedUrl } from "@/lib/map";
 import { prisma } from "@/lib/prisma";
@@ -153,9 +153,9 @@ export default async function HomePage({
   const cosmeticServices = services.filter(
     (service) => !service.requiresResourceId && !massageServices.includes(service)
   );
-  // Цена за 1 единицу препарата (например, «Диспорт (1 ед.)») — не цена процедуры,
-  // поэтому для «Косметология от …» её не учитываем.
-  const cosmeticProcedurePrices = cosmeticServices.filter((service) => !/\(1 ед\.\)/.test(service.name));
+  // Цена за 1 единицу препарата — не цена процедуры, поэтому для «Косметология от …»
+  // её не учитываем.
+  const cosmeticProcedurePrices = cosmeticServices.filter((service) => !PER_UNIT_PRICE_SLUGS.has(service.slug));
   const laserPrice = priceFloor(
     LASER_SERVICES.map(({ prices }) => ({ priceExact: prices.one, priceFrom: null }))
   );
@@ -225,6 +225,32 @@ export default async function HomePage({
                 </summary>
                 <div className={styles.serviceBody}>
                   <p>Консультация врача, уход за кожей и эстетические процедуры.</p>
+                  <ul className={styles.zoneList}>
+                    <li>
+                      <Link href="/botulinoterapiya">
+                        <span>Ботулинотерапия</span>
+                        <span>
+                          <ArrowUpRight aria-hidden="true" size={15} />
+                        </span>
+                      </Link>
+                    </li>
+                    <li>
+                      <Link href="/konturnaya-plastika">
+                        <span>Контурная пластика</span>
+                        <span>
+                          <ArrowUpRight aria-hidden="true" size={15} />
+                        </span>
+                      </Link>
+                    </li>
+                    <li>
+                      <Link href="/lechenie-gipergidroza">
+                        <span>Лечение гипергидроза</span>
+                        <span>
+                          <ArrowUpRight aria-hidden="true" size={15} />
+                        </span>
+                      </Link>
+                    </li>
+                  </ul>
                   <Link
                     href={bookingLink(consultation?.slug, "doctor")}
                     className={styles.textLink}

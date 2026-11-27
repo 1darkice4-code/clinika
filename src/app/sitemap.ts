@@ -28,6 +28,9 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   return [
     { url: `${appUrl}/` },
     { url: `${appUrl}/lazernaya-epilyatsiya` },
+    { url: `${appUrl}/botulinoterapiya` },
+    { url: `${appUrl}/lechenie-gipergidroza` },
+    { url: `${appUrl}/konturnaya-plastika` },
     { url: `${appUrl}/prices` },
     { url: `${appUrl}/booking` },
     ...services.filter((service) => indexableServiceSlugs.has(service.slug)).map((service) => ({

@@ -116,3 +116,30 @@
     font-size: 0.71rem;
   }
 }
+
+.groupLinks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1.4rem;
+  padding: 0 1rem 1rem;
+}
+
+.groupLinks a {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  color: var(--brass-ink);
+  font-size: 0.88rem;
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+}
+
+.medicalWarning {
+  margin-top: 1.5rem;
+  color: var(--ink);
+  font-weight: 700;
+  text-align: center;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}

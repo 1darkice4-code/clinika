@@ -156,3 +156,45 @@
     padding-inline-end: 4.25rem;
   }
 }
+
+.priceTableWrap {
+  overflow-x: auto;
+}
+
+.priceTableWrap thead th {
+  color: var(--muted);
+  font-size: 0.75rem;
+  font-weight: 650;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.priceTableWrap tbody tr {
+  border-top: 1px solid var(--line);
+}
+
+.priceTableWrap tbody th {
+  color: var(--ink);
+  font-weight: 500;
+}
+
+.priceCell {
+  color: var(--ink);
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.related p {
+  color: var(--muted);
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.related ul {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem 1.6rem;
+  margin-top: 0.8rem;
+}

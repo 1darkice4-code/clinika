@@ -2,6 +2,8 @@ export type CosmetologyPriceItem = {
   name: string;
   slug: string;
   priceExact: number | null;
+  /** Цена «от» — для услуг, где итоговая стоимость зависит от дозировки. */
+  priceFrom?: number | null;
   durationMinutes: number;
 };
 
@@ -116,6 +118,55 @@ export const BOTULINUM_SERVICES: readonly CosmetologyPriceItem[] = [
     durationMinutes: 60
   }
 ] as const;
+
+/**
+ * Ботулотоксины — рецептурные лекарственные препараты. Их реклама среди широкой
+ * публики запрещена (ч. 8 ст. 24 ФЗ «О рекламе»), поэтому на публичных страницах
+ * (прайс, онлайн-запись, страницы услуг и специалистов, боты) торговые названия
+ * не показываются. Вместо десяти «брендовых» услуг публике доступны две обобщённые;
+ * брендовые остаются в CRM, чтобы врач и администратор фиксировали фактический препарат.
+ */
+export const BOTULINUM_PUBLIC_SERVICES: readonly CosmetologyPriceItem[] = [
+  {
+    name: "Ботулинотерапия мимических морщин (цена за 1 ед. препарата)",
+    slug: "botulinum-wrinkles",
+    priceExact: null,
+    priceFrom: Math.min(
+      ...BOTULINUM_SERVICES.filter((item) => item.slug.startsWith("wrinkles-")).map((item) => item.priceExact ?? Infinity)
+    ),
+    durationMinutes: 60
+  },
+  {
+    name: "Лечение гипергидроза ботулинотерапией",
+    slug: "botulinum-hyperhidrosis",
+    priceExact: null,
+    priceFrom: Math.min(
+      ...BOTULINUM_SERVICES.filter((item) => item.slug.startsWith("hyperhidrosis-")).map(
+        (item) => item.priceExact ?? Infinity
+      )
+    ),
+    durationMinutes: 60
+  }
+] as const;
+
+/** Услуги, которые есть в CRM, но не показываются на сайте и в ботах. */
+export const PUBLIC_HIDDEN_SERVICE_SLUGS: ReadonlySet<string> = new Set(
+  BOTULINUM_SERVICES.map((item) => item.slug)
+);
+
+/** Услуги, у которых указана цена за 1 единицу препарата, а не за процедуру. */
+export const PER_UNIT_PRICE_SLUGS: ReadonlySet<string> = new Set([
+  "botulinum-wrinkles",
+  ...BOTULINUM_SERVICES.filter((item) => item.slug.startsWith("wrinkles-")).map((item) => item.slug)
+]);
+
+/** Диапазон цен брендовых услуг — для страниц направлений (без торговых названий). */
+export function botulinumPriceRange(kind: "wrinkles" | "hyperhidrosis") {
+  const prices = BOTULINUM_SERVICES.filter((item) => item.slug.startsWith(`${kind}-`))
+    .map((item) => item.priceExact)
+    .filter((price): price is number => price !== null);
+  return { min: Math.min(...prices), max: Math.max(...prices) };
+}
 
 export const CONTOUR_CATEGORY = {
   slug: "contour-plastic",
@@ -351,9 +402,15 @@ export const CONTOUR_SERVICES: readonly CosmetologyPriceItem[] = [
 
 export const COSMETOLOGY_PRICE_GROUPS = [
   { ...CONSULTATION_CATEGORY, items: CONSULTATION_SERVICES },
-  { ...BOTULINUM_CATEGORY, items: BOTULINUM_SERVICES },
+  { ...BOTULINUM_CATEGORY, items: [...BOTULINUM_PUBLIC_SERVICES, ...BOTULINUM_SERVICES] },
   { ...CONTOUR_CATEGORY, items: CONTOUR_SERVICES }
 ] as const;
+
+/** Прайс для публичных страниц — без услуг из PUBLIC_HIDDEN_SERVICE_SLUGS. */
+export const PUBLIC_COSMETOLOGY_PRICE_GROUPS = COSMETOLOGY_PRICE_GROUPS.map((group) => ({
+  ...group,
+  items: group.items.filter((item) => !PUBLIC_HIDDEN_SERVICE_SLUGS.has(item.slug))
+}));
 
 export const COSMETOLOGY_SERVICES = COSMETOLOGY_PRICE_GROUPS.flatMap((group) =>
   group.items.map((item) => ({ ...item, categorySlug: group.slug }))

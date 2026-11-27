@@ -61,6 +61,12 @@ export function ClinicPage({
               Записаться <ArrowRight aria-hidden="true" size={17} />
             </Link>
           </div>
+          <nav aria-label="Направления" className={styles.footerLegal}>
+            <Link href="/lazernaya-epilyatsiya">Лазерная эпиляция</Link>
+            <Link href="/botulinoterapiya">Ботулинотерапия</Link>
+            <Link href="/lechenie-gipergidroza">Лечение гипергидроза</Link>
+            <Link href="/konturnaya-plastika">Контурная пластика</Link>
+          </nav>
           <div className={styles.footerLegal}>
             <Link href="/legal/privacy-policy">Политика конфиденциальности</Link>
             <Link href="/legal/personal-data-consent">Согласие на обработку данных</Link>

@@ -1,11 +1,11 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { notFound, permanentRedirect } from "next/navigation";
 import { SiteFooter } from "@/components/layout/site-footer";
 import { SiteHeader } from "@/components/layout/site-header";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
-import { LASER_SERVICES } from "@/domain/service/current-price-list";
+import { LASER_SERVICES, PUBLIC_HIDDEN_SERVICE_SLUGS } from "@/domain/service/current-price-list";
 import { prisma } from "@/lib/prisma";
 import { formatPrice } from "@/lib/utils";
 
@@ -20,6 +20,18 @@ type PageProps = {
 };
 
 export const dynamic = "force-dynamic";
+
+// Публичные адреса для услуг ботулинотерапии (см. PUBLIC_HIDDEN_SERVICE_SLUGS).
+const DIRECTION_BY_SERVICE_PREFIX: [prefix: string, path: string][] = [
+  ["hyperhidrosis-", "/lechenie-gipergidroza"],
+  ["botulinum-hyperhidrosis", "/lechenie-gipergidroza"],
+  ["wrinkles-", "/botulinoterapiya"],
+  ["botulinum-wrinkles", "/botulinoterapiya"]
+];
+
+function directionPathFor(slug: string) {
+  return DIRECTION_BY_SERVICE_PREFIX.find(([prefix]) => slug.startsWith(prefix))?.[1] ?? null;
+}
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { slug } = await params;
@@ -36,6 +48,10 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
 export default async function ServicePage({ params }: PageProps) {
   const { slug } = await params;
+  const directionPath = directionPathFor(slug);
+  if (PUBLIC_HIDDEN_SERVICE_SLUGS.has(slug) || directionPath) {
+    permanentRedirect(directionPath ?? "/prices");
+  }
   const service = await prisma.service.findFirst({
     where: { slug, isActive: true, deletedAt: null },
     include: {

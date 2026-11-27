@@ -1,5 +1,5 @@
 import { CLINIC_CONTACTS } from "@/config/clinic";
-import { LASER_SERVICES } from "@/domain/service/current-price-list";
+import { LASER_SERVICES, PUBLIC_HIDDEN_SERVICE_SLUGS } from "@/domain/service/current-price-list";
 import { LASER_COMBO } from "@/domain/service/laser-combo";
 import { nextDateInTimezone } from "@/lib/date-time";
 import { prisma } from "@/lib/prisma";
@@ -46,7 +46,7 @@ export async function getPublicBookingCatalog() {
   ]);
 
   const services = categories.flatMap((category) =>
-    category.services.map((service) => {
+    category.services.filter((service) => !PUBLIC_HIDDEN_SERVICE_SLUGS.has(service.slug)).map((service) => {
       const laser = laserMetadata.get(service.slug);
       return {
         ...service,
@@ -84,5 +84,17 @@ export async function getPublicLaserPricing() {
         service.priceExact !== null
     ),
     startingPrice: knownPrices.length ? Math.min(...knownPrices) : null
+  };
+}
+
+/** Контакты клиники для публичных страниц: настройки из CRM поверх значений по умолчанию. */
+export async function getPublicContacts() {
+  const settings = await prisma.clinicSettings.findFirst({
+    select: { phone: true, email: true, address: true }
+  });
+  return {
+    phone: settings?.phone || CLINIC_CONTACTS.phone,
+    email: settings?.email || CLINIC_CONTACTS.email,
+    address: settings?.address || CLINIC_CONTACTS.address
   };
 }

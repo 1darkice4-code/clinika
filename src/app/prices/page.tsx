@@ -3,7 +3,8 @@ import { ArrowDown, ArrowUpRight } from "lucide-react";
 import Link from "next/link";
 import { LaserPriceList } from "@/components/pricing/laser-price-list";
 import { getPublicLaserPricing } from "@/domain/booking/public-catalog";
-import { COSMETOLOGY_PRICE_GROUPS, LASER_SHAVING_PRICE } from "@/domain/service/current-price-list";
+import { MEDICAL_WARNING } from "@/components/direction/direction-landing";
+import { LASER_SHAVING_PRICE, PUBLIC_COSMETOLOGY_PRICE_GROUPS } from "@/domain/service/current-price-list";
 import { formatPrice } from "@/lib/utils";
 import { ClinicPage } from "../clinic-page";
 import styles from "../clinic-pages.module.css";
@@ -18,6 +19,14 @@ export const metadata: Metadata = {
 };
 
 export const dynamic = "force-dynamic";
+
+const GROUP_LINKS: Record<string, { href: string; label: string }[]> = {
+  "botulinum-therapy": [
+    { href: "/botulinoterapiya", label: "О ботулинотерапии" },
+    { href: "/lechenie-gipergidroza", label: "О лечении гипергидроза" }
+  ],
+  "contour-plastic": [{ href: "/konturnaya-plastika", label: "О контурной пластике" }]
+};
 
 export default async function PricesPage() {
   const { contacts: { phone, address, email }, bookableZones } = await getPublicLaserPricing();
@@ -59,7 +68,7 @@ export default async function PricesPage() {
           <section id="cosmetology-prices" className={price.section} aria-labelledby="cosmetology-price-title">
             <h2 id="cosmetology-price-title" className={price.title}>Косметология</h2>
             <div className={styles.disclosureList}>
-              {COSMETOLOGY_PRICE_GROUPS.map((group, index) => (
+              {PUBLIC_COSMETOLOGY_PRICE_GROUPS.map((group, index) => (
                 <details key={group.slug} id={group.slug} open={index === 0}>
                   <summary>{group.name}</summary>
                   <p>{group.description}</p>
@@ -74,18 +83,29 @@ export default async function PricesPage() {
                       {group.items.map((item) => (
                         <tr key={item.slug}>
                           <th scope="row">{item.name}</th>
-                          <td>{formatPrice(null, item.priceExact)}</td>
+                          <td>{formatPrice(item.priceFrom ?? null, item.priceExact)}</td>
                         </tr>
                       ))}
                     </tbody>
                   </table>
+                  {GROUP_LINKS[group.slug] && (
+                    <p className={price.groupLinks}>
+                      {GROUP_LINKS[group.slug].map((link) => (
+                        <Link key={link.href} href={link.href}>
+                          {link.label} <ArrowUpRight size={15} aria-hidden="true" />
+                        </Link>
+                      ))}
+                    </p>
+                  )}
                 </details>
               ))}
             </div>
             <p className={styles.priceNotice}>
               Цены могут отличаться. Уточнить стоимость и записаться можно по телефону{" "}
-              <a href={`tel:${phone}`}>{phone}</a>.
+              <a href={`tel:${phone}`}>{phone}</a>. Препарат и дозировку для ботулинотерапии врач подбирает
+              на очном приёме.
             </p>
+            <p className={price.medicalWarning} role="note">{MEDICAL_WARNING}</p>
           </section>
         </div>
       </main>

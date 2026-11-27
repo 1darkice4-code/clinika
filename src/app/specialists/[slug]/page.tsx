@@ -6,6 +6,7 @@ import { SiteFooter } from "@/components/layout/site-footer";
 import { SiteHeader } from "@/components/layout/site-header";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
+import { PUBLIC_HIDDEN_SERVICE_SLUGS } from "@/domain/service/current-price-list";
 import { prisma } from "@/lib/prisma";
 
 type PageProps = {
@@ -39,6 +40,9 @@ export default async function SpecialistPage({ params }: PageProps) {
   });
 
   if (!specialist) notFound();
+  const publicServices = specialist.services.filter(
+    (item) => !PUBLIC_HIDDEN_SERVICE_SLUGS.has(item.service.slug)
+  );
 
   const name = `${specialist.firstName} ${specialist.lastName}`.trim();
 
@@ -69,7 +73,7 @@ export default async function SpecialistPage({ params }: PageProps) {
               Опыт: {specialist.experienceYears} лет{specialist.slug === "nina-andreevna" && " в эстетических процедурах"}
             </p>
             <p className="mt-3 text-sm text-muted-foreground">Образование: {specialist.education}</p>
-            {specialist.services.length > 0 && (
+            {publicServices.length > 0 && (
               <Link
                 href="/booking"
                 className="mt-8 inline-flex h-11 items-center rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground"
@@ -83,7 +87,7 @@ export default async function SpecialistPage({ params }: PageProps) {
           <Card className="mt-10 p-6">
             <h2 className="text-2xl font-semibold">Услуги специалиста</h2>
             <div className="mt-4 grid gap-3">
-              {specialist.services.map((item) => (
+              {publicServices.map((item) => (
                 <Link key={item.serviceId} href={`/services/${item.service.slug}`} className="rounded-md border p-4">
                   {item.service.name}
                 </Link>
