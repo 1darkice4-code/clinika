@@ -138,16 +138,34 @@ export function DirectionLanding({
                 </Link>
               </div>
             </div>
-            <div className={direction.mastheadPhoto}>
-              <Image
-                src={content.image.src}
-                alt={content.image.alt}
-                fill
-                sizes="(max-width: 760px) 100vw, 52vw"
-                preload
-                style={content.image.position ? { objectPosition: content.image.position } : undefined}
-              />
-            </div>
+            {content.image.cutout ? (
+              <div className={direction.mastheadFigure}>
+                <span className={direction.figureGlow} aria-hidden="true" />
+                <span className={direction.figureRing} aria-hidden="true" />
+                <Sparkle className={`${direction.figureSparkle} ${direction.figureSparkleLarge}`} />
+                <Sparkle className={`${direction.figureSparkle} ${direction.figureSparkleSmall}`} />
+                <Image
+                  src={content.image.src}
+                  alt={content.image.alt}
+                  width={content.image.width ?? 848}
+                  height={content.image.height ?? 1264}
+                  sizes="(max-width: 760px) 80vw, 30vw"
+                  preload
+                  className={direction.figureImage}
+                />
+              </div>
+            ) : (
+              <div className={direction.mastheadPhoto}>
+                <Image
+                  src={content.image.src}
+                  alt={content.image.alt}
+                  fill
+                  sizes="(max-width: 760px) 100vw, 52vw"
+                  preload
+                  style={content.image.position ? { objectPosition: content.image.position } : undefined}
+                />
+              </div>
+            )}
           </div>
         </section>
 
@@ -275,5 +293,14 @@ export function DirectionLanding({
         </div>
       </main>
     </ClinicPage>
+  );
+}
+
+/** Четырёхлучевая звёздочка, как в логотипе «Сияния». */
+function Sparkle({ className }: { className: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+      <path d="M12 0c.6 5.6 2.6 9.8 12 12-9.4 2.2-11.4 6.4-12 12-.6-5.6-2.6-9.8-12-12C9.4 9.8 11.4 5.6 12 0Z" fill="currentColor" />
+    </svg>
   );
 }
