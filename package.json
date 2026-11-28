@@ -34,7 +34,7 @@
     "date-fns-tz": "latest",
     "lucide-react": "latest",
     "nanoid": "latest",
-    "next": "latest",
+    "next": "16.4.6",
     "papaparse": "latest",
     "react": "latest",
     "react-dom": "latest",
