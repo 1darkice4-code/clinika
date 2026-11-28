@@ -2,6 +2,14 @@ import { aftercareSection, buildLaserZonePage, preparationSection } from "./buil
 
 export const bikiniPage = buildLaserZonePage({
   slug: "bikini",
+  image: {
+    src: "/clinic/model-laser-bikini.webp",
+    alt: "Лазерная эпиляция бикини: модель в купальнике, вид сбоку",
+    cutout: true,
+    width: 664,
+    height: 1330,
+    focusX: 50
+  },
   title: "Лазерная эпиляция бикини в Чите",
   shortName: "Бикини",
   metaDescription:

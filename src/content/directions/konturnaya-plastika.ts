@@ -22,7 +22,15 @@ export const konturnayaPlastika: DirectionContent = {
   metaDescription: `Контурная пластика в Чите: губы, носогубные складки, скулы, подбородок. Филлеры с гиалуроновой кислотой и биостимуляторы. От ${rub(minPrice)}.`,
   lead: "Восполнение объёма, коррекция складок и контуров лица филлерами на основе гиалуроновой кислоты и биостимуляторами.",
   priceBadge: `от ${rub(minPrice)}`,
-  image: { src: "/clinic/consultation-room.webp", alt: "Кабинет врача-косметолога клиники «Сияние»" },
+  image: {
+    src: "/clinic/model-kontur.webp",
+    alt: "Контурная пластика в Чите: модель в три четверти, линия скул и подбородка",
+    cutout: true,
+    width: 1470,
+    height: 1808,
+    focusX: 60
+  },
+  shareImage: { src: "/clinic/consultation-room.webp", alt: "Кабинет врача-косметолога клиники «Сияние»" },
   bookingHref: "/booking?booking=doctor&service=cosmetologist-consultation",
   bookingLabel: "Записаться на консультацию",
   prices: {
