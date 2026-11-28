@@ -33,7 +33,8 @@ export type DirectionContent = {
   lead: string;
   /** Плашка в шапке, например «от 150 ₽ за 1 ед.». */
   priceBadge: string;
-  image: { src: string; alt: string };
+  /** Фото в шапке; position — точка кадрирования (CSS object-position), например "center 22%". */
+  image: { src: string; alt: string; position?: string };
   bookingHref: string;
   bookingLabel: string;
   prices: {

@@ -23,7 +23,7 @@ export type LaserZonePageInput = {
   zones: readonly LaserZoneSlug[];
   /** Подписи зон в таблице, если нужно отличие от прайса («Глубокое» → «Глубокое бикини»). */
   zoneLabels?: Partial<Record<LaserZoneSlug, string>>;
-  image?: { src: string; alt: string };
+  image?: { src: string; alt: string; position?: string };
   sections: DirectionContent["sections"];
   questions: DirectionContent["questions"];
   pricesNote?: string;

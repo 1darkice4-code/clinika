@@ -179,7 +179,11 @@ export const litsoPage = buildLaserZonePage({
     "Лазерная эпиляция лица в Чите: усики над верхней губой, подбородок, шея или лицо полностью. Сеанс от 15 минут, курсы на 4, 6 и 10 сеансов.",
   lead: "Верхняя губа (усики), подбородок, шея или лицо полностью. Сеанс — от 15 минут.",
   zones: ["laser-upper-lip", "laser-chin", "laser-neck", "laser-full-face"],
-  image: { src: "/clinic/treatment-room.webp", alt: "Кабинет лазерной эпиляции клиники «Сияние»" },
+  image: {
+    src: "/clinic/model-litso.webp",
+    alt: "Лазерная эпиляция лица: модель с гладкой кожей лица, шеи и плеч",
+    position: "center 24%"
+  },
   sections: [
     [
       {

@@ -139,7 +139,14 @@ export function DirectionLanding({
               </div>
             </div>
             <div className={direction.mastheadPhoto}>
-              <Image src={content.image.src} alt={content.image.alt} fill sizes="(max-width: 760px) 100vw, 52vw" preload />
+              <Image
+                src={content.image.src}
+                alt={content.image.alt}
+                fill
+                sizes="(max-width: 760px) 100vw, 52vw"
+                preload
+                style={content.image.position ? { objectPosition: content.image.position } : undefined}
+              />
             </div>
           </div>
         </section>
