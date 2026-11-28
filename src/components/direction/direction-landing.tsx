@@ -7,7 +7,6 @@ import styles from "@/app/clinic-pages.module.css";
 import direction from "@/app/direction.module.css";
 import home from "@/app/home.module.css";
 import type { DirectionContent, DirectionTextSection } from "@/content/directions/types";
-import { TrustStrip } from "@/components/trust/trust-strip";
 import type { ClinicSchemaContacts } from "@/lib/clinic-structured-data";
 import { buildDirectionStructuredData, serializeJsonLd, type DirectionOffer } from "@/lib/direction-structured-data";
 import { buildDirectionsUrl } from "@/lib/map";
@@ -18,7 +17,9 @@ const RELATED = [
   { path: "/lazernaya-epilyatsiya", name: "Лазерная эпиляция" },
   { path: "/botulinoterapiya", name: "Ботулинотерапия" },
   { path: "/lechenie-gipergidroza", name: "Лечение гипергидроза" },
-  { path: "/konturnaya-plastika", name: "Контурная пластика" }
+  { path: "/konturnaya-plastika", name: "Контурная пластика" },
+  { path: "/konturnaya-plastika/guby", name: "Увеличение губ" },
+  { path: "/dermatolog-kosmetolog", name: "Дерматолог-косметолог" }
 ];
 
 export type RelatedLink = { path: string; name: string };
@@ -144,8 +145,6 @@ export function DirectionLanding({
         </section>
 
         <div className={`${home.shell} ${styles.priceContent}`}>
-          <TrustStrip variant={content.performer.href.includes("nina") ? "laser" : "cosmetology"} />
-
           <section id="prices" className={`${styles.priceSection} ${direction.priceBlock}`} aria-labelledby={`${slug}-prices`}>
             <h2 id={`${slug}-prices`} className={`${home.title} ${styles.sectionTitle}`}>{content.prices.title}</h2>
             <div className={`${styles.disclosureList} ${direction.priceTableWrap}`}>
@@ -220,16 +219,18 @@ export function DirectionLanding({
             )
           )}
 
+          {content.contraindications && (
           <section className={`${styles.priceSection} ${direction.contraindications}`} aria-labelledby={`${slug}-contra`}>
             <h2 id={`${slug}-contra`} className={`${home.title} ${styles.sectionTitle}`}>Противопоказания</h2>
-            <p className={direction.bodyText}>{content.contraindications.intro}</p>
+            <p className={direction.bodyText}>{content.contraindications?.intro}</p>
             <ul className={direction.bulletList}>
-              {content.contraindications.items.map((item) => <li key={item}>{item}</li>)}
+              {content.contraindications?.items.map((item) => <li key={item}>{item}</li>)}
             </ul>
             <p className={direction.bodyText}>
-              {content.contraindications.note} <a href={`tel:${phone}`}>{phone}</a>
+              {content.contraindications?.note} <a href={`tel:${phone}`}>{phone}</a>
             </p>
           </section>
+          )}
 
           {beforeFaq}
 

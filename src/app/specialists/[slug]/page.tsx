@@ -43,16 +43,20 @@ function laserRows(): ServiceRow[] {
 
 function cosmetologyRows(): ServiceRow[] {
   const contourMin = Math.min(...CONTOUR_SERVICES.flatMap((item) => (item.priceExact ? [item.priceExact] : [])));
+  const lipsMin = Math.min(
+    ...CONTOUR_SERVICES.flatMap((item) => (/липс|lips/i.test(item.name) && item.priceExact ? [item.priceExact] : []))
+  );
   const [chief] = CONSULTATION_SERVICES;
   return [
     {
       name: chief.name,
       price: formatPrice(null, chief.priceExact),
-      href: `/booking?booking=doctor&service=${chief.slug}`
+      href: "/dermatolog-kosmetolog"
     },
     { name: "Ботулинотерапия мимических морщин", price: `от ${formatPrice(null, botulinumPriceRange("wrinkles").min)} за ед.`, href: "/botulinoterapiya" },
     { name: "Лечение гипергидроза", price: `от ${formatPrice(null, botulinumPriceRange("hyperhidrosis").min)}`, href: "/lechenie-gipergidroza" },
-    { name: "Контурная пластика", price: `от ${formatPrice(null, contourMin)}`, href: "/konturnaya-plastika" }
+    { name: "Контурная пластика", price: `от ${formatPrice(null, contourMin)}`, href: "/konturnaya-plastika" },
+    { name: "Увеличение губ", price: `от ${formatPrice(null, lipsMin)}`, href: "/konturnaya-plastika/guby" }
   ];
 }
 

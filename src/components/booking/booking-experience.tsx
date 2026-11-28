@@ -365,10 +365,10 @@ export function BookingAssistantWidget({ address, phone }: { address: string; ph
             setOpen((visible) => !visible);
             if (!open) void loadCatalog().catch(() => undefined);
           }}
-          className="floating-request-button inline-flex min-h-14 items-center gap-2.5 rounded-full px-5 text-sm font-bold focus-visible:outline-2 sm:px-6"
+          className="floating-request-button inline-flex min-h-11 items-center gap-2 rounded-full px-4 text-sm font-semibold focus-visible:outline-2"
         >
-          <MessageCircle className="h-5 w-5" aria-hidden="true" />
-          <span className="floating-request-label">Оставить заявку</span>
+          <MessageCircle className="h-[18px] w-[18px]" aria-hidden="true" />
+          <span className="floating-request-label">Помощь</span>
         </button>
       </div>
       {openedOnce && (

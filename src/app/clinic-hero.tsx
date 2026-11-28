@@ -22,16 +22,20 @@ const brand = "Сияние";
 const slideDuration = 6_000;
 
 export type HeroPromo = { label: string; href: string };
+export type HeroQuickLink = { label: string; price: string; href: string };
 
 export function ClinicHero({
   address,
   promo,
-  laserBookingHref = "/booking?booking=laser"
+  laserBookingHref = "/booking?booking=laser",
+  quickLinks = []
 }: {
   address: string;
   /** Строка действующей акции; без неё блок не выводится. */
   promo?: HeroPromo | null;
   laserBookingHref?: string;
+  /** Популярные услуги с ценами — карточка справа на широком экране. */
+  quickLinks?: HeroQuickLink[];
 }) {
   const hero = useRef<HTMLElement>(null);
   const [active, setActive] = useState(0);
@@ -135,6 +139,30 @@ export function ClinicHero({
             </Link>
           </div>
         </div>
+        {quickLinks.length > 0 && (
+          <aside className={styles.heroAside} aria-labelledby="hero-aside-title">
+            <p id="hero-aside-title" className={styles.heroAsideTitle}>Популярное</p>
+            <ul>
+              {quickLinks.map((item) => (
+                <li key={item.href}>
+                  <Link href={item.href}>
+                    <span>{item.label}</span>
+                    <span className={styles.heroAsidePrice}>{item.price}</span>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+            <div className={styles.heroAsideFooter}>
+              <a href="#contacts">
+                <MapPin aria-hidden="true" size={16} />
+                {address}
+              </a>
+              <Link href="/prices">
+                Все цены <ArrowUpRight aria-hidden="true" size={15} />
+              </Link>
+            </div>
+          </aside>
+        )}
         <div className={styles.heroAddress} data-testid="hero-facts">
           <p>
             <a href="#contacts">

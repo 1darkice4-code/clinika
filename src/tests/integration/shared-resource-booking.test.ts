@@ -3,7 +3,7 @@ import { createAppointment } from "@/domain/booking/booking.service";
 import { LEGAL_DOCUMENT_VERSION } from "@/domain/legal/legal-documents";
 import { getSlotGrid } from "@/domain/schedule/schedule.service";
 import { prisma } from "@/lib/prisma";
-import { nextDateInTimezone } from "@/lib/date-time";
+import { addDaysToDateKey, nextDateInTimezone } from "@/lib/date-time";
 
 // Verifies the core invariant: two bookings for the SAME laser slot — which two
 // different operators could take — cannot both succeed. The machine is capacity 1.
@@ -30,7 +30,8 @@ describe.skipIf(!process.env.DATABASE_URL)("shared resource booking", () => {
 
     const settings = await prisma.clinicSettings.findFirstOrThrow({ select: { timezone: true } });
     const dateFrom = nextDateInTimezone(new Date(), settings.timezone);
-    const dateTo = dateFrom;
+    // Ищем неделю вперёд: в выходные лазер может не работать, и тест не должен зависеть от дня недели.
+    const dateTo = addDaysToDateKey(dateFrom, 6);
     const { slots } = await getSlotGrid({ serviceId: laserService.id, dateFrom, dateTo });
     const freeSlot = slots.find((slot) => slot.available);
     expect(freeSlot, "expected at least one free laser slot").toBeTruthy();
