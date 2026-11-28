@@ -1,20 +1,60 @@
 import type { Metadata } from "next";
+import { ArrowUpRight, Phone } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { SiteFooter } from "@/components/layout/site-footer";
-import { SiteHeader } from "@/components/layout/site-header";
-import { Badge } from "@/components/ui/badge";
-import { Card } from "@/components/ui/card";
+import { ClinicPage } from "@/app/clinic-page";
+import styles from "@/app/clinic-pages.module.css";
+import direction from "@/app/direction.module.css";
+import home from "@/app/home.module.css";
+import { RelatedDirections } from "@/components/direction/direction-landing";
+import { ReviewCards } from "@/components/reviews/reviews-block";
+import list from "@/components/reviews/reviews.module.css";
 import { JsonLd } from "@/components/seo/json-ld";
 import { CLINIC_SITE_URL } from "@/config/clinic";
+import { LASER_ZONE_PAGES } from "@/content/laser-zones/pages";
 import { getPublicContacts } from "@/domain/booking/public-catalog";
 import { getPublishedReviews } from "@/domain/review/public-reviews";
+import {
+  CONSULTATION_SERVICES,
+  CONTOUR_SERVICES,
+  PUBLIC_HIDDEN_SERVICE_SLUGS,
+  botulinumPriceRange
+} from "@/domain/service/current-price-list";
 import { breadcrumbNode, clinicNode, CLINIC_ID, jsonLdGraph, webPageNode, websiteNode } from "@/lib/clinic-structured-data";
-import { PUBLIC_HIDDEN_SERVICE_SLUGS } from "@/domain/service/current-price-list";
-
-const reviewDateFormat = new Intl.DateTimeFormat("ru-RU", { month: "long", year: "numeric", timeZone: "Asia/Chita" });
 import { prisma } from "@/lib/prisma";
+import { formatPrice } from "@/lib/utils";
+
+/** Фото из папки public, если в CRM фото специалиста не загружено. */
+const PHOTO_FALLBACK: Record<string, string> = {
+  "nina-andreevna": "/doctors/nina-andreevna.png",
+  "svetlana-nersisyan": "/doctors/svetlana-nersisyan-hd.webp"
+};
+
+type ServiceRow = { name: string; price: string; href: string };
+
+function laserRows(): ServiceRow[] {
+  return LASER_ZONE_PAGES.map((page) => ({
+    name: page.content.title.replace(/ в Чите$/, ""),
+    price: page.content.priceBadge,
+    href: page.content.path
+  }));
+}
+
+function cosmetologyRows(): ServiceRow[] {
+  const contourMin = Math.min(...CONTOUR_SERVICES.flatMap((item) => (item.priceExact ? [item.priceExact] : [])));
+  const [chief] = CONSULTATION_SERVICES;
+  return [
+    {
+      name: chief.name,
+      price: formatPrice(null, chief.priceExact),
+      href: `/booking?booking=doctor&service=${chief.slug}`
+    },
+    { name: "Ботулинотерапия мимических морщин", price: `от ${formatPrice(null, botulinumPriceRange("wrinkles").min)} за ед.`, href: "/botulinoterapiya" },
+    { name: "Лечение гипергидроза", price: `от ${formatPrice(null, botulinumPriceRange("hyperhidrosis").min)}`, href: "/lechenie-gipergidroza" },
+    { name: "Контурная пластика", price: `от ${formatPrice(null, contourMin)}`, href: "/konturnaya-plastika" }
+  ];
+}
 
 type PageProps = {
   params: Promise<{ slug: string }>;
@@ -51,7 +91,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
       url: path,
       title,
       description,
-      images: [{ url: specialist.photo?.publicUrl ?? "/clinic/treatment-room.webp", alt: name }]
+      images: [{ url: specialist.photo?.publicUrl ?? PHOTO_FALLBACK[specialist.slug] ?? "/clinic/treatment-room.webp", alt: name }]
     }
   };
 }
@@ -106,88 +146,127 @@ export default async function SpecialistPage({ params }: PageProps) {
   const publicServices = specialist.services.filter(
     (item) => !PUBLIC_HIDDEN_SERVICE_SLUGS.has(item.service.slug)
   );
-
-  const name = `${specialist.firstName} ${specialist.lastName}`.trim();
+  const isLaser = /лазер/i.test(`${specialist.position} ${specialist.specialization}`);
+  const rows: ServiceRow[] = isLaser
+    ? laserRows()
+    : isPhysician
+      ? cosmetologyRows()
+      : publicServices.map((item) => ({
+          name: item.service.name,
+          price: formatPrice(item.service.priceFrom, item.service.priceExact),
+          href: `/booking?service=${item.service.slug}`
+        }));
+  const bookingHref = isLaser
+    ? "/booking?booking=laser"
+    : "/booking?booking=doctor&service=cosmetologist-consultation";
+  const photoUrl = specialist.photo?.publicUrl ?? PHOTO_FALLBACK[specialist.slug] ?? null;
+  const reviewTopic = isLaser ? "laser" : "cosmetology";
 
   return (
-    <>
+    <ClinicPage phone={schemaContacts.phone} address={schemaContacts.address} email={schemaContacts.email} bookingHref={bookingHref}>
       <JsonLd data={structuredData} />
-      <SiteHeader />
-      <main className="mx-auto max-w-5xl px-4 py-14 sm:px-6 lg:px-8">
-        <div className="grid gap-8 md:grid-cols-[320px_1fr]">
-          <div className="relative aspect-[4/5] overflow-hidden rounded-md border bg-muted">
-            {specialist.photo?.publicUrl && (
-              <Image
-                src={specialist.photo.publicUrl}
-                alt={specialist.photo.alt ?? name}
-                fill
-                sizes="320px"
-                className="object-cover"
-              />
-            )}
-          </div>
-          <div>
-            <Badge>{specialist.position}</Badge>
-            <h1 className="mt-4 text-4xl font-semibold">
-              {name}
-            </h1>
-            <p className="mt-3 text-primary">{specialist.specialization}</p>
-            <p className="mt-5 text-muted-foreground">{specialist.description}</p>
-            <p className="mt-5 text-sm text-muted-foreground">
-              Опыт: {specialist.experienceYears} лет{specialist.slug === "nina-andreevna" && " в эстетических процедурах"}
-            </p>
-            <p className="mt-3 text-sm text-muted-foreground">Образование: {specialist.education}</p>
-            {publicServices.length > 0 && (
-              <Link
-                href="/booking"
-                className="mt-8 inline-flex h-11 items-center rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground"
-              >
-                Записаться
-              </Link>
-            )}
-          </div>
-        </div>
-        {publicServices.length > 0 && (
-          <Card className="mt-10 p-6">
-            <h2 className="text-2xl font-semibold">Услуги специалиста</h2>
-            <div className="mt-4 grid gap-3">
-              {publicServices.map((item) => (
-                <Link key={item.serviceId} href={`/services/${item.service.slug}`} className="rounded-md border p-4">
-                  {item.service.name}
+      <main id="clinic-main" tabIndex={-1}>
+        <section className={direction.masthead} aria-labelledby="specialist-title">
+          <div className={`${home.shell} ${direction.mastheadInner}`}>
+            <div className={direction.mastheadCopy}>
+              <nav aria-label="Хлебные крошки" className={direction.breadcrumbs}>
+                <Link href="/">Главная</Link>
+                <span aria-hidden="true">/</span>
+                <Link href="/#specialists">Специалисты</Link>
+              </nav>
+              <p className={direction.specialistRole}>{specialist.position}</p>
+              <h1 id="specialist-title" className={`${home.title} ${direction.mastheadTitle}`}>{fullName}</h1>
+              <p>{specialist.description}</p>
+              <dl className={direction.specialistFacts}>
+                <div>
+                  <dt>Опыт</dt>
+                  <dd>
+                    {specialist.experienceYears} лет{isLaser ? " в эстетических процедурах" : " врачебной практики"}
+                  </dd>
+                </div>
+                {specialist.education && (
+                  <div>
+                    <dt>Образование</dt>
+                    <dd>{specialist.education}</dd>
+                  </div>
+                )}
+              </dl>
+              <div className={styles.introActions}>
+                <Link href={bookingHref} className={home.buttonBrass}>
+                  Записаться к специалисту <ArrowUpRight size={17} aria-hidden="true" />
                 </Link>
-              ))}
+                <a href={`tel:${schemaContacts.phone}`} className={home.heroLink}>
+                  <Phone size={16} aria-hidden="true" /> {schemaContacts.phone}
+                </a>
+              </div>
             </div>
-          </Card>
-        )}
-        <Card className="mt-10 p-6" aria-labelledby="specialist-reviews">
-          <h2 id="specialist-reviews" className="text-2xl font-semibold">Отзывы</h2>
-          {reviews.length > 0 ? (
-            <div className="mt-4 grid gap-4 md:grid-cols-2">
-              {reviews.map((review) => (
-                <article key={review.id} className="rounded-md border p-4">
-                  <p className="text-sm text-amber-700" aria-label={`Оценка ${review.rating} из 5`}>
-                    {"★".repeat(review.rating)}
-                    {"☆".repeat(5 - review.rating)}
-                  </p>
-                  <p className="mt-2 whitespace-pre-line">{review.text}</p>
-                  <p className="mt-3 text-sm text-muted-foreground">
-                    {review.name} · {reviewDateFormat.format(review.date)}
-                  </p>
-                </article>
-              ))}
-            </div>
-          ) : (
-            <p className="mt-3 text-muted-foreground">Отзывов на сайте пока нет — будьте первым.</p>
+            {photoUrl && (
+              <div className={`${direction.mastheadPhoto} ${direction.portrait}`}>
+                <Image src={photoUrl} alt={specialist.photo?.alt ?? fullName} fill sizes="(max-width: 760px) 100vw, 40vw" preload />
+              </div>
+            )}
+          </div>
+        </section>
+
+        <div className={`${home.shell} ${styles.priceContent}`}>
+          {rows.length > 0 && (
+            <section className={`${styles.priceSection} ${direction.priceBlock}`} aria-labelledby="specialist-services">
+              <h2 id="specialist-services" className={`${home.title} ${styles.sectionTitle}`}>Услуги и цены</h2>
+              <div className={`${styles.disclosureList} ${direction.priceTableWrap}`}>
+                <table className={styles.priceTable}>
+                  <thead>
+                    <tr>
+                      <th scope="col">Услуга</th>
+                      <th scope="col">Цена</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {rows.map((row) => (
+                      <tr key={row.name}>
+                        <th scope="row">
+                          <Link href={row.href} className={direction.rowLink}>{row.name}</Link>
+                        </th>
+                        <td className={direction.priceCell}>{row.price}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </section>
           )}
-          <Link
-            href={`/otzyvy?o=${specialist.slug === "nina-andreevna" ? "laser" : "cosmetology"}#form`}
-            className="mt-4 inline-flex text-primary"
-          >
-            Оставить отзыв
-          </Link>
-        </Card>
+
+          {specialist.certificates && (
+            <section className={styles.priceSection} aria-labelledby="specialist-certificates">
+              <h2 id="specialist-certificates" className={`${home.title} ${styles.sectionTitle}`}>Обучение и сертификаты</h2>
+              <ul className={direction.bulletList}>
+                {specialist.certificates
+                  .split(/\n|;\s*/)
+                  .map((line) => line.trim())
+                  .filter(Boolean)
+                  .map((line) => (
+                    <li key={line}>{line}</li>
+                  ))}
+              </ul>
+            </section>
+          )}
+
+          <section className={styles.priceSection} aria-labelledby="specialist-reviews">
+            <h2 id="specialist-reviews" className={`${home.title} ${styles.sectionTitle}`}>Отзывы</h2>
+            {reviews.length > 0 ? (
+              <ReviewCards reviews={reviews} />
+            ) : (
+              <p className={list.invite}>
+                Отзывов на сайте пока нет. Были на приёме?{" "}
+                <Link href={`/otzyvy?o=${reviewTopic}#form`} className={home.textLink}>
+                  Расскажите, как всё прошло <ArrowUpRight size={15} aria-hidden="true" />
+                </Link>
+              </p>
+            )}
+          </section>
+
+          <RelatedDirections currentPath={path} />
+        </div>
       </main>
-      <SiteFooter />
-    </>
+    </ClinicPage>
   );
 }

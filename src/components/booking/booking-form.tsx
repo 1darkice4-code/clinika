@@ -16,6 +16,10 @@ import { Input, Select, Textarea } from "@/components/ui/input";
 import type { AttributionInput } from "@/domain/analytics/attribution";
 import { LEGAL_DOCUMENT_VERSION } from "@/domain/legal/legal-documents";
 import { cn, formatPrice } from "@/lib/utils";
+import { addDays, dayLabel, firstFreeDay, freeLabel, summarizeDays, type DaySummary } from "./nearest-days";
+
+/** Сколько дней вперёд показываем для быстрого выбора даты. */
+const NEAREST_DAYS = 14;
 
 type ServiceOption = {
   id: string;
@@ -313,6 +317,9 @@ export function BookingForm({
     initialDate && initialDate >= bookingDate ? initialDate : bookingDate
   );
   const [slots, setSlots] = useState<Slot[]>([]);
+  const [daySummary, setDaySummary] = useState<DaySummary[] | null>(null);
+  // Пока пользователь сам не выбрал дату, форма переключает её на ближайший свободный день.
+  const userPickedDate = useRef(Boolean(initialDate));
   const [slot, setSlot] = useState("");
   const [loadingSlots, setLoadingSlots] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -392,7 +399,39 @@ export function BookingForm({
     return () => controller.abort();
   }, [date, needsSlots, serviceId, specialistId, isResourceService, refreshSlots]);
 
+  // Ближайшие две недели одним запросом: показываем дни со свободными окнами.
+  useEffect(() => {
+    if (!needsSlots || !serviceId || (!isResourceService && !specialistId)) {
+      setDaySummary(null);
+      return;
+    }
+    const controller = new AbortController();
+    setDaySummary(null);
+    const specialistParam = isResourceService ? "" : `&specialistId=${specialistId}`;
+    const dateTo = addDays(bookingDate, NEAREST_DAYS - 1);
+    fetch(`/api/public/slots?serviceId=${serviceId}${specialistParam}&dateFrom=${bookingDate}&dateTo=${dateTo}`, {
+      signal: controller.signal
+    })
+      .then(async (response) => {
+        if (!response.ok) throw new Error("Не удалось получить свободное время");
+        return response.json() as Promise<{ slots: Slot[]; timezone: string }>;
+      })
+      .then((data) => {
+        if (controller.signal.aborted) return;
+        const summary = summarizeDays(data.slots, data.timezone, bookingDate, NEAREST_DAYS);
+        setDaySummary(summary);
+        const first = firstFreeDay(summary);
+        if (!userPickedDate.current && first) setDate(first);
+      })
+      .catch((caughtError: unknown) => {
+        if (caughtError instanceof DOMException && caughtError.name === "AbortError") return;
+        setDaySummary(null);
+      });
+    return () => controller.abort();
+  }, [bookingDate, needsSlots, serviceId, specialistId, isResourceService, refreshSlots]);
+
   const hasFreeSlots = slots.some((item) => item.available);
+  const noFreeDaysSoon = daySummary !== null && daySummary.every((day) => day.free === 0);
 
   function clearFieldError(field: keyof FieldErrors) {
     setFieldErrors((current) => {
@@ -602,14 +641,14 @@ export function BookingForm({
             >
               <Stethoscope className="h-5 w-5 shrink-0" />
               <span>
-                <span className="block text-sm font-medium">Светлана Арутюновна</span>
+                <span className="block text-sm font-medium">Косметология</span>
                 <span
                   className={cn(
                     "mt-1 block text-xs",
                     direction === "doctor" ? "text-primary-foreground/75" : "text-muted-foreground"
                   )}
                 >
-                  Косметология
+                  Врач Светлана Арутюновна
                 </span>
               </span>
             </button>
@@ -633,7 +672,7 @@ export function BookingForm({
                     direction === "laser" ? "text-primary-foreground/75" : "text-muted-foreground"
                   )}
                 >
-                  Выбор зоны
+                  Специалист Нина Андреевна
                 </span>
               </span>
             </button>
@@ -720,9 +759,63 @@ export function BookingForm({
               </Select>
             </div>
           )}
+          {daySummary && !noFreeDaysSoon && (
+            // min-w-0: ряд дат прокручивается внутри, а не раздвигает форму на телефоне.
+            <div className="min-w-0">
+              <span className="text-sm font-medium" id="nearest-days-label">
+                Ближайшие даты
+              </span>
+              <div
+                role="group"
+                aria-labelledby="nearest-days-label"
+                className="-mx-1 mt-2 flex gap-2 overflow-x-auto px-1 pb-1"
+                data-testid="nearest-days"
+              >
+                {daySummary.map((day) => {
+                  const label = dayLabel(day.date);
+                  const selected = day.date === date;
+                  return (
+                    <button
+                      key={day.date}
+                      type="button"
+                      disabled={day.free === 0}
+                      aria-pressed={selected}
+                      onClick={() => {
+                        userPickedDate.current = true;
+                        setDate(day.date);
+                        clearFieldError("date");
+                        clearFieldError("slot");
+                      }}
+                      className={cn(
+                        "flex min-w-[4.75rem] shrink-0 flex-col items-center rounded-xl border px-2 py-2 text-center transition",
+                        selected && "border-primary bg-primary text-primary-foreground shadow-sm",
+                        !selected && day.free > 0 && "bg-card hover:border-primary",
+                        day.free === 0 && "cursor-not-allowed border-dashed bg-muted/50 text-muted-foreground opacity-70"
+                      )}
+                    >
+                      <span className="text-xs uppercase tracking-wide">{label.weekday}</span>
+                      <span className="text-sm font-semibold">{label.date}</span>
+                      <span className={cn("mt-0.5 text-xs", selected ? "text-primary-foreground/80" : "text-muted-foreground")}>
+                        {freeLabel(day.free)}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+          {noFreeDaysSoon && (
+            <div className="rounded-md border border-dashed bg-muted/40 px-3 py-3 text-sm text-muted-foreground">
+              В ближайшие две недели онлайн-записи нет. Выберите дату позже или{" "}
+              <button type="button" className="font-medium text-primary underline" onClick={() => setMode("lead")}>
+                оставьте заявку на звонок
+              </button>
+              {" "}— администратор подберёт время.
+            </div>
+          )}
           <div>
             <label className="text-sm font-medium" htmlFor="date">
-              Дата
+              {daySummary && !noFreeDaysSoon ? "Или другая дата" : "Дата"}
             </label>
             <Input
               id="date"
@@ -734,6 +827,7 @@ export function BookingForm({
               aria-describedby={fieldErrors.date ? "date-error" : undefined}
               className={fieldErrors.date ? "border-destructive" : undefined}
               onChange={(event) => {
+                userPickedDate.current = true;
                 setDate(event.target.value);
                 clearFieldError("date");
                 clearFieldError("slot");
@@ -764,7 +858,9 @@ export function BookingForm({
                 </div>
               ) : slots.length === 0 ? (
                 <p className="rounded-md border border-dashed bg-muted/40 px-3 py-3 text-sm text-muted-foreground">
-                  На выбранную дату свободного времени нет.
+                  {daySummary && !noFreeDaysSoon
+                    ? "На этот день мест нет — выберите другой день в списке выше."
+                    : "На выбранную дату свободного времени нет."}
                 </p>
               ) : (
                 <>

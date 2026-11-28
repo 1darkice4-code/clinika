@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowDown, ArrowUpRight, MapPin } from "lucide-react";
+import { ArrowUpRight, MapPin } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
@@ -21,7 +21,18 @@ const rooms = [
 const brand = "Сияние";
 const slideDuration = 6_000;
 
-export function ClinicHero({ address }: { address: string }) {
+export type HeroPromo = { label: string; href: string };
+
+export function ClinicHero({
+  address,
+  promo,
+  laserBookingHref = "/booking?booking=laser"
+}: {
+  address: string;
+  /** Строка действующей акции; без неё блок не выводится. */
+  promo?: HeroPromo | null;
+  laserBookingHref?: string;
+}) {
   const hero = useRef<HTMLElement>(null);
   const [active, setActive] = useState(0);
   const [motionAllowed, setMotionAllowed] = useState(false);
@@ -105,14 +116,23 @@ export function ClinicHero({ address }: { address: string }) {
               </span>
             </span>
           </h1>
-          <p className={styles.heroDescription}>Косметология, лазерная эпиляция и массаж в Чите.</p>
-          <div className={styles.heroActions}>
-            <Link id="booking" href="/booking" className={styles.buttonBrass}>
-              Записаться на приём <ArrowUpRight aria-hidden="true" size={19} />
+          <p className={styles.heroDescription}>
+            Лазерная эпиляция, ботулинотерапия и контурная пластика в Чите. Приём врача-дерматолога.
+          </p>
+          {promo && (
+            <Link href={promo.href} className={styles.heroPromo}>
+              <span className={styles.heroPromoDot} aria-hidden="true" />
+              {promo.label}
+              <ArrowUpRight aria-hidden="true" size={15} />
             </Link>
-            <a href="#services" className={styles.heroLink}>
-              Смотреть услуги <ArrowDown aria-hidden="true" size={16} />
-            </a>
+          )}
+          <div className={styles.heroActions}>
+            <Link id="booking" href={laserBookingHref} className={styles.buttonBrass}>
+              Записаться на лазер <ArrowUpRight aria-hidden="true" size={19} />
+            </Link>
+            <Link href="/booking?booking=doctor&service=cosmetologist-consultation" className={styles.heroLink}>
+              Консультация врача <ArrowUpRight aria-hidden="true" size={16} />
+            </Link>
           </div>
         </div>
         <div className={styles.heroAddress} data-testid="hero-facts">

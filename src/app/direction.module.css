@@ -216,6 +216,8 @@
 }
 
 .breadcrumbs a {
+  display: inline-block;
+  padding-block: 0.35rem;
   color: inherit;
   text-decoration: underline;
   text-underline-offset: 0.2em;
@@ -286,5 +288,41 @@
   .rowLink {
     display: inline-block;
     padding-block: 0.35rem;
+  }
+}
+
+.specialistRole {
+  margin-bottom: 0.5rem;
+  color: var(--brass);
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.specialistFacts {
+  display: grid;
+  gap: 0.6rem;
+  margin-block: 1rem 0.4rem;
+  color: #e9e3d7;
+  font-size: 0.92rem;
+  line-height: 1.5;
+}
+
+.specialistFacts dt {
+  color: var(--brass);
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.portrait img {
+  object-position: center 18%;
+}
+
+@media (min-width: 760px) {
+  .portrait {
+    min-height: clamp(22rem, 40vw, 32rem);
   }
 }

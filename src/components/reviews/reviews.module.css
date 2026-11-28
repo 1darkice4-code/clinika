@@ -207,3 +207,8 @@
   height: 1px;
   overflow: hidden;
 }
+
+.invite {
+  color: var(--muted);
+  font-size: 0.95rem;
+}

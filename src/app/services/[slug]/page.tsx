@@ -1,10 +1,13 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound, permanentRedirect } from "next/navigation";
-import { SiteFooter } from "@/components/layout/site-footer";
-import { SiteHeader } from "@/components/layout/site-header";
-import { Badge } from "@/components/ui/badge";
-import { Card } from "@/components/ui/card";
+import { ArrowUpRight } from "lucide-react";
+import { ClinicPage } from "@/app/clinic-page";
+import styles from "@/app/clinic-pages.module.css";
+import direction from "@/app/direction.module.css";
+import home from "@/app/home.module.css";
+import { MEDICAL_WARNING, RelatedDirections } from "@/components/direction/direction-landing";
+import { getPublicContacts } from "@/domain/booking/public-catalog";
 import { zonePagePathForService } from "@/content/laser-zones/pages";
 import { PUBLIC_HIDDEN_SERVICE_SLUGS } from "@/domain/service/current-price-list";
 import { prisma } from "@/lib/prisma";
@@ -21,6 +24,13 @@ type PageProps = {
 };
 
 export const dynamic = "force-dynamic";
+
+// Страница направления для категории услуги — ссылка «О процедуре» и хлебные крошки.
+const DIRECTION_FOR_CATEGORY: Record<string, { path: string; name: string }> = {
+  "contour-plastic": { path: "/konturnaya-plastika", name: "Контурная пластика" },
+  "botulinum-therapy": { path: "/botulinoterapiya", name: "Ботулинотерапия" },
+  "cosmetology-consultations": { path: "/prices#cosmetology-prices", name: "Косметология" }
+};
 
 // Публичные адреса для услуг ботулинотерапии (см. PUBLIC_HIDDEN_SERVICE_SLUGS).
 const DIRECTION_BY_SERVICE_PREFIX: [prefix: string, path: string][] = [
@@ -70,46 +80,60 @@ export default async function ServicePage({ params }: PageProps) {
 
   if (!service) notFound();
 
+  const contacts = await getPublicContacts();
+  const bookingHref = `/booking?${new URLSearchParams({ booking: service.requiresResourceId ? "laser" : "doctor", service: service.slug })}`;
+  const directionLink = DIRECTION_FOR_CATEGORY[service.category.slug] ?? null;
+
   return (
-    <>
-      <SiteHeader />
-      <main className="mx-auto max-w-5xl px-4 py-14 sm:px-6 lg:px-8">
-        <div className="flex flex-wrap items-center gap-3">
-          <Link href="/prices" className="text-sm text-primary">
-            ← Все услуги и цены
-          </Link>
-          <Badge>{service.category.name}</Badge>
-        </div>
-        <h1 className="mt-4 text-4xl font-semibold">{service.name}</h1>
-        <p className="mt-4 text-lg text-muted-foreground">{service.shortDescription}</p>
-        <div className="mt-8 grid gap-4 md:grid-cols-3">
-          <Card className="p-5">
-            <p className="text-sm text-muted-foreground">Стоимость</p>
-            <p className="mt-2 text-xl font-semibold">{formatPrice(service.priceFrom, service.priceExact)}</p>
-          </Card>
-          <Card className="p-5">
-            <p className="text-sm text-muted-foreground">Длительность</p>
-            <p className="mt-2 text-xl font-semibold">{service.durationMinutes} мин</p>
-          </Card>
-          <Card className="p-5">
-            <p className="text-sm text-muted-foreground">Запись</p>
-            <Link href="/booking" className="mt-2 inline-flex text-primary">
-              Выбрать время
-            </Link>
-          </Card>
-        </div>
-        <section className="mt-10 rounded-md border bg-card p-6">
-          <h2 className="text-2xl font-semibold">Описание</h2>
-          <p className="mt-4 whitespace-pre-line text-muted-foreground">{service.fullDescription}</p>
-          {service.contraindications && (
-            <p className="mt-6 rounded-md border border-destructive/30 p-4 text-sm text-muted-foreground">
-              {service.contraindications}
-            </p>
-          )}
-          {service.disclaimer && <p className="mt-4 text-sm text-muted-foreground">{service.disclaimer}</p>}
+    <ClinicPage phone={contacts.phone} address={contacts.address} email={contacts.email} bookingHref={bookingHref}>
+      <main id="clinic-main" tabIndex={-1}>
+        <section className={direction.masthead} aria-labelledby="service-title">
+          <div className={`${home.shell} ${direction.mastheadInner}`}>
+            <div className={direction.mastheadCopy}>
+              <nav aria-label="Хлебные крошки" className={direction.breadcrumbs}>
+                <Link href="/">Главная</Link>
+                <span aria-hidden="true">/</span>
+                <Link href={directionLink?.path ?? "/prices"}>{directionLink?.name ?? "Цены"}</Link>
+              </nav>
+              <p className={direction.specialistRole}>{service.category.name}</p>
+              <h1 id="service-title" className={`${home.title} ${direction.mastheadTitle} ${direction.mastheadTitleLong}`}>
+                {service.name}
+              </h1>
+              <p>{service.shortDescription}</p>
+              <dl className={direction.specialistFacts}>
+                <div>
+                  <dt>Стоимость</dt>
+                  <dd>{formatPrice(service.priceFrom, service.priceExact)}</dd>
+                </div>
+                <div>
+                  <dt>Длительность</dt>
+                  <dd>{service.durationMinutes} мин</dd>
+                </div>
+              </dl>
+              <div className={styles.introActions}>
+                <Link href={bookingHref} className={home.buttonBrass}>
+                  Выбрать время <ArrowUpRight size={17} aria-hidden="true" />
+                </Link>
+                {directionLink && (
+                  <Link href={directionLink.path} className={home.heroLink}>
+                    О процедуре <ArrowUpRight size={16} aria-hidden="true" />
+                  </Link>
+                )}
+              </div>
+            </div>
+          </div>
         </section>
+        <div className={`${home.shell} ${styles.priceContent}`}>
+          <section className={styles.priceSection} aria-labelledby="service-about">
+            <h2 id="service-about" className={`${home.title} ${styles.sectionTitle}`}>Описание</h2>
+            <p className={direction.bodyText} style={{ whiteSpace: "pre-line" }}>{service.fullDescription}</p>
+            {service.contraindications && <p className={styles.priceNotice}>{service.contraindications}</p>}
+            {service.disclaimer && <p className={direction.bodyText}>{service.disclaimer}</p>}
+          </section>
+          <RelatedDirections currentPath={`/services/${service.slug}`} />
+          <p className={direction.medicalWarning} role="note">{MEDICAL_WARNING}</p>
+        </div>
       </main>
-      <SiteFooter />
-    </>
+    </ClinicPage>
   );
 }

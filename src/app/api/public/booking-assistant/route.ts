@@ -57,7 +57,7 @@ async function askDeepSeek(input: z.infer<typeof schema>) {
     findAssistantService(input.question, catalog.services) ??
     catalog.services.find((item) => item.slug === input.serviceSlug);
   const context = {
-    clinic: "Клиника красоты и здоровья «Сияние», Чита",
+    clinic: "Клиника эстетической медицины «Сияние», Чита",
     contacts: catalog.contacts,
     specialists: catalog.specialists.map(({ firstName, lastName, position, experienceYears }) => ({
       firstName,

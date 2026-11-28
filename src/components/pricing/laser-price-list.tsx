@@ -41,37 +41,48 @@ export function LaserPriceList({ bookableZones }: { bookableZones: BookableZones
           >
             <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-4 py-3.5 marker:content-none">
               <span className="font-semibold text-foreground">{group.name}</span>
-              <span className="flex items-center gap-2 text-xs text-muted-foreground">
+              <span className="flex items-center gap-2 text-[0.82rem] text-muted-foreground">
                 {group.items.length} {zonesLabel(group.items.length)}
                 <span className="text-lg leading-none transition group-open:rotate-45">+</span>
               </span>
             </summary>
             <div className="divide-y divide-border border-t border-border">
               {group.items.map((item) => (
-                <article key={item.slug} className="px-3 py-4">
-                  <h3 className="text-sm font-semibold leading-5 text-foreground">
-                    {zoneLabel(item.slug, item.zone)}
-                  </h3>
-                  <dl className="mt-3 grid grid-cols-4 overflow-hidden rounded-lg border border-border bg-muted/25">
+                <article key={item.slug} className="px-4 py-4">
+                  <div className="flex items-baseline justify-between gap-3">
+                    <h3 className="text-base font-semibold leading-6 text-foreground">{item.zone}</h3>
+                    <p className="shrink-0 text-right">
+                      <span className="block text-lg font-semibold tabular-nums text-metal-strong">
+                        {singlePrice(item.slug, item.prices.one)}
+                      </span>
+                      <span className="block text-[0.82rem] text-muted-foreground">за 1 сеанс</span>
+                    </p>
+                  </div>
+                  <dl className="mt-3 grid grid-cols-3 overflow-hidden rounded-lg border border-border bg-muted/25">
                     {[
-                      ["1 сеанс", singlePrice(item.slug, item.prices.one)],
-                      ["4", formatPrice(null, item.prices.four)],
-                      ["6", formatPrice(null, item.prices.six)],
-                      ["10", formatPrice(null, item.prices.ten)]
+                      ["4 сеанса", item.prices.four],
+                      ["6 сеансов", item.prices.six],
+                      ["10 сеансов", item.prices.ten]
                     ].map(([label, price], priceIndex) => (
                       <div
                         key={label}
                         className={`min-w-0 px-1 py-2.5 text-center ${priceIndex > 0 ? "border-l border-border" : ""}`}
                       >
-                        <dt className="text-[0.65rem] uppercase tracking-wide text-muted-foreground">
-                          {label}
-                        </dt>
-                        <dd className="mt-1 text-[0.72rem] font-semibold tabular-nums text-metal-strong">
-                          {price}
+                        <dt className="text-[0.82rem] text-muted-foreground">{label}</dt>
+                        <dd className="mt-0.5 text-sm font-semibold tabular-nums text-foreground">
+                          {formatPrice(null, Number(price))}
                         </dd>
                       </div>
                     ))}
                   </dl>
+                  {available.has(item.slug) && (
+                    <Link
+                      href={`/booking?booking=laser&service=${item.slug}`}
+                      className="mt-3 flex min-h-11 items-center justify-center rounded-full border border-border bg-card text-sm font-semibold text-metal-strong transition hover:border-primary"
+                    >
+                      Записаться на «{item.zone}»
+                    </Link>
+                  )}
                 </article>
               ))}
             </div>

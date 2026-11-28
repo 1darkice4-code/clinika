@@ -44,11 +44,11 @@ export function ClinicPage({
       <footer className={styles.footer}>
         <div className={styles.shell}>
           <div className={styles.footerGrid}>
-            <Link href="/" aria-label="Сияние — главная" className={styles.footerBrand}>
+            <Link href="/" className={styles.footerBrand}>
               <BrandMark />
               <span>
                 <strong>Сияние</strong>
-                <span>Клиника красоты и здоровья</span>
+                <span>Клиника эстетической медицины</span>
               </span>
             </Link>
             <nav aria-label="Разделы сайта" className={styles.footerNav}>

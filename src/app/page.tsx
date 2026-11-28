@@ -5,7 +5,8 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { CLINIC_CONTACTS } from "@/config/clinic";
 import { FEATURED_REVIEW_SOURCE_URL } from "@/domain/review/featured-reviews";
-import { PromoBanner } from "@/components/promo/promo-banner";
+import { TrustStrip } from "@/components/trust/trust-strip";
+import { CURRENT_PROMO, isPromoActive, promoBookingHref, promoLastDayLabel, promoOffers } from "@/domain/promo/current-promo";
 import { JsonLd } from "@/components/seo/json-ld";
 import { getPublicContacts } from "@/domain/booking/public-catalog";
 import { CLINIC_ID, clinicNode, jsonLdGraph, webPageNode, websiteNode } from "@/lib/clinic-structured-data";
@@ -168,6 +169,7 @@ export default async function HomePage({
     cosmeticServices.find((service) => service.slug === "cosmetologist-consultation") ??
     cosmeticServices.find((service) => /консультац/i.test(service.name));
   const schemaContacts = await getPublicContacts();
+  const promoActive = isPromoActive();
   const clinicStructuredData = jsonLdGraph([
     { ...clinicNode(schemaContacts), description },
     websiteNode(),
@@ -185,7 +187,17 @@ export default async function HomePage({
     <ClinicPage phone={phone} address={address}>
       <main id="clinic-main" tabIndex={-1}>
         <JsonLd data={clinicStructuredData} />
-        <ClinicHero address={address} />
+        <ClinicHero
+          address={address}
+          promo={promoActive ? { label: `−${CURRENT_PROMO.firstSessionDiscountPercent}% на первый сеанс лазера · до ${promoLastDayLabel()}`, href: "/akcii" } : null}
+          laserBookingHref={promoActive ? promoBookingHref() : "/booking?booking=laser"}
+        />
+
+        <section className={styles.trustSection} aria-label="Почему «Сияние»">
+          <div className={styles.shell}>
+            <TrustStrip variant="clinic" />
+          </div>
+        </section>
 
         <section id="services" className={styles.section}>
           <div className={styles.shell}>
@@ -198,10 +210,7 @@ export default async function HomePage({
                 Полный прайс <ArrowUpRight aria-hidden="true" size={17} />
               </Link>
             </div>
-            <div className={styles.promoSlot}>
-              <PromoBanner headingLevel={3} />
-            </div>
-            <div className={styles.serviceList}>
+<div className={styles.serviceList}>
               <details className={styles.service} data-testid="service-card">
                 <summary className={styles.serviceSummary}>
                   <span className={styles.serviceMedia}>
@@ -294,6 +303,7 @@ export default async function HomePage({
                   </Link>
                 </div>
               </details>
+              {massageServices.some((service) => (service.priceExact ?? service.priceFrom ?? 0) > 0) ? (
               <details className={styles.service} data-testid="service-card">
                 <summary className={styles.serviceSummary}>
                   <span className={styles.serviceMedia}>
@@ -330,6 +340,48 @@ export default async function HomePage({
                   )}
                 </div>
               </details>
+              ) : promoActive ? (
+              <details className={styles.service} data-testid="service-card">
+                <summary className={styles.serviceSummary}>
+                  <span className={styles.serviceMedia}>
+                    <Image
+                      src="/clinic/treatment-room.webp"
+                      alt=""
+                      fill
+                      sizes="(min-width: 900px) 34vw, (min-width: 620px) 50vw, 94vw"
+                    />
+                  </span>
+                  <span className={styles.serviceInfo}>
+                    <span className={styles.serviceName}>Акция «{CURRENT_PROMO.name}»</span>
+                    <span className={styles.servicePrice}>до {promoLastDayLabel()}</span>
+                  </span>
+                  <span className={styles.serviceIcon}>
+                    <Plus aria-hidden="true" size={20} />
+                  </span>
+                </summary>
+                <div className={styles.serviceBody}>
+                  <p>Лазерная эпиляция со скидкой и выгодные комплексы.</p>
+                  <ul className={styles.zoneList}>
+                    {promoOffers()
+                      .filter((offer) => offer.cta)
+                      .map((offer) => (
+                        <li key={offer.id}>
+                          <Link href={offer.cta?.href ?? "/akcii"}>
+                            <span>{offer.title}</span>
+                            <span>
+                              {offer.price ? formatPrice(null, offer.price.now) : offer.badge}{" "}
+                              <ArrowUpRight aria-hidden="true" size={15} />
+                            </span>
+                          </Link>
+                        </li>
+                      ))}
+                  </ul>
+                  <Link href="/akcii" className={styles.textLink}>
+                    Условия акции <ArrowUpRight aria-hidden="true" size={16} />
+                  </Link>
+                </div>
+              </details>
+              ) : null}
             </div>
           </div>
         </section>

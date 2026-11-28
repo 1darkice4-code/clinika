@@ -14,3 +14,15 @@ test.describe("laser zone pages on a narrow phone", () => {
     });
   }
 });
+
+test.describe("booking on a narrow phone", () => {
+  test.use({ viewport: { width: 390, height: 844 } });
+
+  test("date step fits the screen width", async ({ page }) => {
+    await page.goto("/booking?booking=laser&service=laser-underarms");
+    await page.getByRole("button", { name: "Выбрать время", exact: true }).click();
+    await expect(page.getByText("Выберите дату и время", { exact: true })).toBeVisible();
+    await page.waitForLoadState("networkidle");
+    expect(await page.evaluate(() => window.innerWidth)).toBe(390);
+  });
+});

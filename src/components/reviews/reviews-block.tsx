@@ -32,6 +32,9 @@ export function ReviewCards({ reviews }: { reviews: PublicReview[] }) {
  * Отзывы о специалисте или клинике. Показывает только опубликованные администратором отзывы;
  * пока их нет — приглашение оставить первый.
  */
+/** Пока опубликовано меньше отзывов, блок не показывается — пустой список работает против клиники. */
+export const MIN_REVIEWS_TO_SHOW = 3;
+
 export async function ReviewsBlock({
   title,
   specialistSlug,
@@ -44,6 +47,16 @@ export async function ReviewsBlock({
   limit?: number;
 }) {
   const reviews = await getPublishedReviews({ specialistSlug, limit });
+  if (reviews.length < MIN_REVIEWS_TO_SHOW) {
+    return (
+      <p className={list.invite}>
+        Были у нас на процедуре?{" "}
+        <Link href={`/otzyvy?o=${topic}#form`} className={home.textLink}>
+          Расскажите, как всё прошло <ArrowUpRight size={15} aria-hidden="true" />
+        </Link>
+      </p>
+    );
+  }
   return (
     <section className={styles.priceSection} aria-labelledby={`reviews-${topic}`}>
       <h2 id={`reviews-${topic}`} className={`${home.title} ${styles.sectionTitle}`}>{title}</h2>

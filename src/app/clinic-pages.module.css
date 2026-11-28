@@ -295,3 +295,8 @@
 .priceSection {
   scroll-margin-top: 6.5rem;
 }
+
+/* Адрес и телефон в шапках страниц — удобная область нажатия на телефоне. */
+.laserSummary a {
+  padding-block: 0.45rem;
+}
