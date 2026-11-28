@@ -28,7 +28,8 @@ export const konturnayaPlastika: DirectionContent = {
     cutout: true,
     width: 1470,
     height: 1808,
-    focusX: 60
+    focusX: 60,
+    chin: 0.45
   },
   shareImage: { src: "/clinic/consultation-room.webp", alt: "Кабинет врача-косметолога клиники «Сияние»" },
   bookingHref: "/booking?booking=doctor&service=cosmetologist-consultation",

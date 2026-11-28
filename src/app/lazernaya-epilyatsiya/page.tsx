@@ -107,6 +107,7 @@ export default async function LaserHairRemovalPage() {
               alt="Лазерная эпиляция в Чите: модель в защитных очках для лазера"
               width={1122}
               height={1394}
+              chin={0.36}
             />
           </div>
         </section>

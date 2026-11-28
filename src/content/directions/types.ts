@@ -36,9 +36,20 @@ export type DirectionContent = {
   /**
    * Фото в шапке; position — точка кадрирования (CSS object-position), например "center 22%".
    * cutout — PNG/WebP с прозрачным фоном: модель без рамки на тёмной шапке со свечением;
-   * focusX — где по горизонтали центр кольца за моделью, в процентах (по умолчанию 53).
+   * focusX — где по горизонтали центр кольца за моделью, в процентах (по умолчанию 53);
+   * chin — на какой доле высоты фото подбородок (0.45 = 45% сверху): по нему на ПК
+   * выравнивается размер головы, чтобы модели на разных страницах были одного масштаба.
    */
-  image: { src: string; alt: string; position?: string; cutout?: boolean; width?: number; height?: number; focusX?: number };
+  image: {
+    src: string;
+    alt: string;
+    position?: string;
+    cutout?: boolean;
+    width?: number;
+    height?: number;
+    focusX?: number;
+    chin?: number;
+  };
   /** Картинка для превью ссылок и разметки, если в шапке модель без фона (прозрачный WebP для превью не годится). */
   shareImage?: { src: string; alt: string };
   bookingHref: string;

@@ -147,6 +147,7 @@ export function DirectionLanding({
                 width={content.image.width ?? 848}
                 height={content.image.height ?? 736}
                 focusX={content.image.focusX}
+                chin={content.image.chin}
               />
             ) : (
               <div className={direction.mastheadPhoto}>

@@ -29,7 +29,8 @@ export const uvelichenieGub: DirectionContent = {
     cutout: true,
     width: 1600,
     height: 1696,
-    focusX: 57
+    focusX: 57,
+    chin: 0.54
   },
   shareImage: { src: "/clinic/consultation-room.webp", alt: "Кабинет врача-косметолога клиники «Сияние»" },
   bookingHref: `/booking?booking=doctor&service=${chief.slug}`,

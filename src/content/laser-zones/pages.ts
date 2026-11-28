@@ -8,7 +8,8 @@ export const bikiniPage = buildLaserZonePage({
     cutout: true,
     width: 664,
     height: 1330,
-    focusX: 50
+    focusX: 50,
+    chin: 0.5
   },
   title: "Лазерная эпиляция бикини в Чите",
   shortName: "Бикини",
@@ -81,7 +82,8 @@ export const podmyshkiPage = buildLaserZonePage({
     cutout: true,
     width: 1548,
     height: 1730,
-    focusX: 50
+    focusX: 50,
+    chin: 0.33
   },
   title: "Лазерная эпиляция подмышек в Чите",
   shortName: "Подмышки",
@@ -140,7 +142,8 @@ export const nogiPage = buildLaserZonePage({
     cutout: true,
     width: 1821,
     height: 1144,
-    focusX: 64
+    focusX: 64,
+    chin: 0.5
   },
   title: "Лазерная эпиляция ног в Чите",
   shortName: "Ноги",
@@ -208,8 +211,9 @@ export const litsoPage = buildLaserZonePage({
     alt: "Лазерная эпиляция лица: модель с гладкой кожей лица и шеи",
     cutout: true,
     width: 1560,
-    height: 1767,
-    focusX: 50
+    height: 1414,
+    focusX: 50,
+    chin: 0.46
   },
   sections: [
     [
@@ -308,8 +312,9 @@ export const muzhskayaPage = buildLaserZonePage({
     alt: "Мужская лазерная эпиляция: модель-мужчина, вид со спины",
     cutout: true,
     width: 1335,
-    height: 1845,
-    focusX: 52
+    height: 1384,
+    focusX: 52,
+    chin: 0.33
   },
   title: "Мужская лазерная эпиляция в Чите",
   shortName: "Для мужчин",

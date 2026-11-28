@@ -24,7 +24,8 @@ export const dermatologKosmetolog: DirectionContent = {
     cutout: true,
     width: 1600,
     height: 1436,
-    focusX: 55
+    focusX: 55,
+    chin: 0.58
   },
   shareImage: { src: "/clinic/consultation-room.webp", alt: "Кабинет врача-дерматолога клиники «Сияние»" },
   bookingHref: `/booking?booking=doctor&service=${chief.slug}`,

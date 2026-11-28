@@ -25,7 +25,8 @@ export const lechenieGipergidroza: DirectionContent = {
     cutout: true,
     width: 1553,
     height: 1709,
-    focusX: 54
+    focusX: 54,
+    chin: 0.3
   },
   shareImage: { src: "/clinic/treatment-room.webp", alt: "Процедурный кабинет клиники «Сияние»" },
   bookingHref: "/booking?booking=doctor&service=botulinum-hyperhidrosis",

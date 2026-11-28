@@ -104,11 +104,12 @@ export default async function PromoPage() {
               </div>
             </div>
             <MastheadFigure
-              src="/clinic/model-akcii-smile.webp"
-              alt="Акция на лазерную эпиляцию: улыбающаяся модель"
-              width={1225}
-              height={1795}
+              src="/clinic/model-laser-goggles-2.webp"
+              alt="Акция на лазерную эпиляцию: модель в защитных очках для лазера"
+              width={1126}
+              height={1325}
               focusX={57}
+              chin={0.36}
             />
           </div>
         </section>

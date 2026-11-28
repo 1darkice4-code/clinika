@@ -9,22 +9,30 @@ type MastheadFigureProps = {
   height: number;
   /** Центр кольца по горизонтали, % ширины фото — ставьте на голову/корпус модели. */
   focusX?: number;
+  /**
+   * Доля высоты фото до подбородка: по ней на ПК голова у всех моделей одного размера (как у
+   * портрета до плеч). Если фото выше шапки — низ уходит за кромку. 0.5 и больше — фото целиком
+   * (для кадров в полный рост, где важно показать зону).
+   */
+  chin?: number;
 };
 
 /**
  * Модель на прозрачном фоне в тёмной шапке страницы: свечение, кольцо и звёзды из логотипа.
  * Фото должно касаться только нижнего края кадра — этот срез ставится на кромку шапки.
  */
-export function MastheadFigure({ src, alt, width, height, focusX = 53 }: MastheadFigureProps) {
-  const vars = { "--figure-ratio": width / height, "--ring-x": `${focusX}%` } as CSSProperties;
+export function MastheadFigure({ src, alt, width, height, focusX = 53, chin = 0.45 }: MastheadFigureProps) {
+  const vars = { "--figure-ratio": width / height, "--ring-x": `${focusX}%`, "--chin": chin } as CSSProperties;
   return (
     <div className={direction.mastheadFigure} style={vars}>
-      <div className={direction.figureStage}>
-        <span className={direction.figureGlow} aria-hidden="true" />
-        <span className={direction.figureRing} aria-hidden="true" />
-        <CompassStar className={`${direction.figureStar} ${direction.figureStarLarge}`} />
-        <CompassStar className={`${direction.figureStar} ${direction.figureStarSmall}`} />
-        <Image src={src} alt={alt} width={width} height={height} sizes="(max-width: 760px) 86vw, 34rem" preload className={direction.figureImage} />
+      <div className={direction.figureFrame}>
+        <div className={direction.figureStage}>
+          <span className={direction.figureGlow} aria-hidden="true" />
+          <span className={direction.figureRing} aria-hidden="true" />
+          <CompassStar className={`${direction.figureStar} ${direction.figureStarLarge}`} />
+          <CompassStar className={`${direction.figureStar} ${direction.figureStarSmall}`} />
+          <Image src={src} alt={alt} width={width} height={height} sizes="(max-width: 760px) 86vw, 40rem" preload className={direction.figureImage} />
+        </div>
       </div>
     </div>
   );

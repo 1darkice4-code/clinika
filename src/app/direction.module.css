@@ -1,4 +1,6 @@
 .masthead {
+  /* Свечение за моделью шире фото — не даём ему создать горизонтальную прокрутку. */
+  overflow-x: clip;
   background: radial-gradient(ellipse at 80% 0%, #38342c, transparent 60%), var(--night);
   color: var(--white);
 }
@@ -54,6 +56,7 @@
    совпадает с нижней кромкой шапки — плечи остаются целыми, без затуханий. */
 .mastheadFigure {
   position: relative;
+  container-type: inline-size;
   display: grid;
   justify-items: center;
   align-self: end;
@@ -61,9 +64,16 @@
   clip-path: inset(-100vh -100vw 0 -100vw);
 }
 
+/* Рамка видимой части: обрезает только снизу (кольцо и звёзды могут выходить вбок). */
+.figureFrame {
+  width: 100%;
+  clip-path: inset(-100vh -100vw 0 -100vw);
+}
+
 .figureStage {
   position: relative;
   isolation: isolate;
+  margin-inline: auto;
   /* Ширина ограничена и по высоте: вертикальное фото не должно растягивать шапку. */
   width: min(94%, 34rem, calc(36rem * var(--figure-ratio, 1)));
 }
@@ -140,6 +150,18 @@
 @media (min-width: 760px) {
   .mastheadFigure {
     margin-bottom: calc(-1 * clamp(2.1rem, 5vw, 4.5rem));
+  }
+
+  /* Одинаковый масштаб моделей — как у портрета до плеч: голова (верх кадра → подбородок)
+     = половина ширины колонки. Высота фото = 50cqw / доля до подбородка; видимая часть — не выше
+     ширины колонки, остальное уходит за кромку шапки. Ширина — не больше колонки
+     (широкие позы с поднятыми руками из-за этого чуть мельче). */
+  .figureFrame {
+    max-height: 100cqw;
+  }
+
+  .figureStage {
+    width: min(100cqw, calc(50cqw / var(--chin, 0.5) * var(--figure-ratio, 1)));
   }
 }
 

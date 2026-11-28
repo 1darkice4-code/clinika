@@ -27,7 +27,8 @@ export const botulinoterapiya: DirectionContent = {
     cutout: true,
     width: 1568,
     height: 1652,
-    focusX: 54
+    focusX: 54,
+    chin: 0.52
   },
   shareImage: { src: "/clinic/consultation-room.webp", alt: "Кабинет врача-косметолога клиники «Сияние»" },
   bookingHref: "/booking?booking=doctor&service=botulinum-wrinkles",
