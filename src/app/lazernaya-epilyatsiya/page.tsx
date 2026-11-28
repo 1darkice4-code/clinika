@@ -12,6 +12,7 @@ import { RelatedDirections } from "@/components/direction/direction-landing";
 import { LASER_ZONE_LINKS } from "@/content/laser-zones/pages";
 import { LaserPriceList } from "@/components/pricing/laser-price-list";
 import { PromoBanner } from "@/components/promo/promo-banner";
+import { ReviewsBlock } from "@/components/reviews/reviews-block";
 import { LASER_COMBO, comboRegularPrice } from "@/domain/service/laser-combo";
 import {
   aftercare,
@@ -225,6 +226,8 @@ export default async function LaserHairRemovalPage() {
               {contraindications.note} <a href={`tel:${phone}`}>{phone}</a>
             </p>
           </section>
+
+          <ReviewsBlock title="Отзывы о лазерной эпиляции" specialistSlug="nina-andreevna" topic="laser" />
 
           <section className={styles.priceSection} aria-labelledby="laser-faq">
             <h2 id="laser-faq" className={`${home.title} ${styles.sectionTitle}`}>Частые вопросы</h2>

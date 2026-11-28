@@ -26,7 +26,10 @@ export default async function ContentPage() {
       include: { category: true }
     }),
     prisma.specialist.findMany({ where: { deletedAt: null }, orderBy: { sortOrder: "asc" } }),
-    prisma.review.findMany({ orderBy: { reviewDate: "desc" } })
+    prisma.review.findMany({
+      orderBy: [{ status: "asc" }, { reviewDate: "desc" }],
+      include: { specialist: { select: { firstName: true, lastName: true } } }
+    })
   ]);
 
   return (
@@ -58,7 +61,14 @@ export default async function ContentPage() {
         reviews={reviews.map((review) => ({
           id: review.id,
           clientDisplayName: review.clientDisplayName,
-          status: review.status
+          status: review.status,
+          text: review.text,
+          rating: review.rating,
+          source: review.source,
+          specialistName: review.specialist
+            ? `${review.specialist.firstName} ${review.specialist.lastName}`.trim()
+            : null,
+          reviewDate: review.reviewDate.toLocaleDateString("ru-RU", { timeZone: "Asia/Chita" })
         }))}
       />
 

@@ -1,4 +1,5 @@
 import { DirectionLanding } from "@/components/direction/direction-landing";
+import { ReviewsBlock } from "@/components/reviews/reviews-block";
 import { konturnayaPlastika as content } from "@/content/directions/konturnaya-plastika";
 import { directionMetadata } from "@/content/directions/metadata";
 import { getPublicContacts } from "@/domain/booking/public-catalog";
@@ -12,5 +13,12 @@ export default async function ContourPlasticPage() {
   const offers = CONTOUR_SERVICES.flatMap((item) =>
     item.priceExact === null ? [] : [{ name: item.name, price: item.priceExact }]
   );
-  return <DirectionLanding content={content} contacts={contacts} offers={offers} />;
+  return (
+    <DirectionLanding
+      content={content}
+      contacts={contacts}
+      offers={offers}
+      beforeFaq={<ReviewsBlock title="Отзывы пациентов" specialistSlug="svetlana-nersisyan" topic="cosmetology" />}
+    />
+  );
 }

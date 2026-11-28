@@ -28,6 +28,11 @@ type Review = {
   id: string;
   clientDisplayName: string;
   status: "PENDING" | "PUBLISHED" | "REJECTED";
+  text?: string;
+  rating?: number;
+  source?: string | null;
+  specialistName?: string | null;
+  reviewDate?: string;
 };
 
 export function ContentQuickEditor({
@@ -176,7 +181,16 @@ export function ContentQuickEditor({
                 }))
               }
             >
-              <p className="font-medium">{review.clientDisplayName}</p>
+              <div className="min-w-0 space-y-1">
+                <p className="font-medium">
+                  {review.clientDisplayName}
+                  {review.rating ? <span className="ml-2 text-amber-600">{"★".repeat(review.rating)}</span> : null}
+                </p>
+                {review.text && <p className="whitespace-pre-line text-sm">{review.text}</p>}
+                <p className="text-xs text-muted-foreground">
+                  {[review.specialistName, review.source, review.reviewDate].filter(Boolean).join(" · ")}
+                </p>
+              </div>
               <Select name="status" defaultValue={review.status} aria-label="Статус отзыва">
                 <option value="PENDING">На модерации</option>
                 <option value="PUBLISHED">Опубликован</option>

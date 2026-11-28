@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { DirectionLanding } from "@/components/direction/direction-landing";
 import { PromoBanner } from "@/components/promo/promo-banner";
+import { ReviewsBlock } from "@/components/reviews/reviews-block";
 import { directionMetadata } from "@/content/directions/metadata";
 import { LASER_ZONE_LINKS, LASER_ZONE_PAGES } from "@/content/laser-zones/pages";
 import { getPublicContacts } from "@/domain/booking/public-catalog";
@@ -30,6 +31,7 @@ export default async function LaserZonePage({ params }: PageProps) {
       contacts={contacts}
       related={{ title: "Лазерная эпиляция других зон", links: LASER_ZONE_LINKS }}
       afterPrices={<PromoBanner />}
+      beforeFaq={<ReviewsBlock title="Отзывы о лазерной эпиляции" specialistSlug="nina-andreevna" topic="laser" />}
     />
   );
 }

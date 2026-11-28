@@ -60,7 +60,10 @@ export default async function BookingPage({
             </a>
             {promoComment && (
               <p className={styles.promoNote} role="status">
-                {promoComment} Скидку администратор учтёт при подтверждении записи.
+                {promoComment}{" "}
+                {promoOffer?.price
+                  ? "Цена комплекса уже указана в записи."
+                  : "Скидку администратор учтёт при подтверждении записи."}
               </p>
             )}
           </div>

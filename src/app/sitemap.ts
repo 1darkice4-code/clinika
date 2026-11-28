@@ -35,6 +35,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${appUrl}/konturnaya-plastika` },
     { url: `${appUrl}/prices` },
     { url: `${appUrl}/akcii` },
+    { url: `${appUrl}/otzyvy` },
     { url: `${appUrl}/booking` },
     ...services.filter((service) => indexableServiceSlugs.has(service.slug)).map((service) => ({
       url: `${appUrl}/services/${service.slug}`,

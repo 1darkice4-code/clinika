@@ -6,7 +6,10 @@ import { SiteFooter } from "@/components/layout/site-footer";
 import { SiteHeader } from "@/components/layout/site-header";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
+import { getPublishedReviews } from "@/domain/review/public-reviews";
 import { PUBLIC_HIDDEN_SERVICE_SLUGS } from "@/domain/service/current-price-list";
+
+const reviewDateFormat = new Intl.DateTimeFormat("ru-RU", { month: "long", year: "numeric", timeZone: "Asia/Chita" });
 import { prisma } from "@/lib/prisma";
 
 type PageProps = {
@@ -40,6 +43,7 @@ export default async function SpecialistPage({ params }: PageProps) {
   });
 
   if (!specialist) notFound();
+  const reviews = await getPublishedReviews({ specialistSlug: specialist.slug, limit: 10 });
   const publicServices = specialist.services.filter(
     (item) => !PUBLIC_HIDDEN_SERVICE_SLUGS.has(item.service.slug)
   );
@@ -83,7 +87,7 @@ export default async function SpecialistPage({ params }: PageProps) {
             )}
           </div>
         </div>
-        {specialist.services.length > 0 && (
+        {publicServices.length > 0 && (
           <Card className="mt-10 p-6">
             <h2 className="text-2xl font-semibold">Услуги специалиста</h2>
             <div className="mt-4 grid gap-3">
@@ -95,6 +99,33 @@ export default async function SpecialistPage({ params }: PageProps) {
             </div>
           </Card>
         )}
+        <Card className="mt-10 p-6" aria-labelledby="specialist-reviews">
+          <h2 id="specialist-reviews" className="text-2xl font-semibold">Отзывы</h2>
+          {reviews.length > 0 ? (
+            <div className="mt-4 grid gap-4 md:grid-cols-2">
+              {reviews.map((review) => (
+                <article key={review.id} className="rounded-md border p-4">
+                  <p className="text-sm text-amber-700" aria-label={`Оценка ${review.rating} из 5`}>
+                    {"★".repeat(review.rating)}
+                    {"☆".repeat(5 - review.rating)}
+                  </p>
+                  <p className="mt-2 whitespace-pre-line">{review.text}</p>
+                  <p className="mt-3 text-sm text-muted-foreground">
+                    {review.name} · {reviewDateFormat.format(review.date)}
+                  </p>
+                </article>
+              ))}
+            </div>
+          ) : (
+            <p className="mt-3 text-muted-foreground">Отзывов на сайте пока нет — будьте первым.</p>
+          )}
+          <Link
+            href={`/otzyvy?o=${specialist.slug === "nina-andreevna" ? "laser" : "cosmetology"}#form`}
+            className="mt-4 inline-flex text-primary"
+          >
+            Оставить отзыв
+          </Link>
+        </Card>
       </main>
       <SiteFooter />
     </>

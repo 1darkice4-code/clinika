@@ -171,3 +171,26 @@ export async function deliverAppointmentTelegramNotification(appointmentId: stri
     });
   }
 }
+
+/** Короткое уведомление администратору (например, о новом отзыве). Ошибки только логируются. */
+export async function notifyAdminTelegram(text: string) {
+  const settings = await prisma.clinicSettings.findFirst({
+    select: { telegramNotificationsEnabled: true, telegramBotTokenEncrypted: true, telegramAdminChatId: true }
+  });
+  if (!settings?.telegramNotificationsEnabled || !settings.telegramBotTokenEncrypted || !settings.telegramAdminChatId) {
+    return false;
+  }
+  try {
+    await sendTelegramMessage({
+      token: decryptSecret(settings.telegramBotTokenEncrypted),
+      chatId: settings.telegramAdminChatId,
+      text
+    });
+    return true;
+  } catch (error) {
+    log("error", "Telegram admin notification failed", {
+      error: error instanceof Error ? error.message.slice(0, 300) : "Ошибка Telegram"
+    });
+    return false;
+  }
+}

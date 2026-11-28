@@ -22,7 +22,7 @@ const navLinks = [
   { href: "/prices", label: "Прайс" },
   { href: "/akcii", label: "Акции" },
   { href: "/#specialists", label: "Специалисты" },
-  { href: "/#reviews", label: "Отзывы" },
+  { href: "/otzyvy", label: "Отзывы" },
   { href: "/#contacts", label: "Контакты" }
 ];
 
