@@ -232,3 +232,59 @@
   color: var(--brass-ink);
   text-decoration-color: currentColor;
 }
+
+/* Блок цен — элемент сетки страницы: без min-width: 0 широкая таблица распирает
+   всю страницу на телефоне. */
+.priceBlock {
+  min-width: 0;
+}
+
+/* На телефоне таблица цен с курсами раскладывается в карточки по зонам. */
+@media (max-width: 640px) {
+  .stackedTable thead {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+
+  .stackedTable tbody tr {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.45rem 1rem;
+    padding: 1rem;
+  }
+
+  .stackedTable tbody th {
+    grid-column: 1 / -1;
+    padding: 0 0 0.2rem;
+    font-size: 1rem;
+  }
+
+  .stackedTable tbody td {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 0.5rem;
+    padding: 0;
+    font-size: 0.95rem;
+  }
+
+  .stackedTable tbody td::before {
+    content: attr(data-label);
+    color: var(--muted);
+    font-size: 0.82rem;
+    font-weight: 500;
+  }
+
+  .stackedTable tbody td:first-of-type {
+    font-size: 1.05rem;
+  }
+
+  .rowLink {
+    display: inline-block;
+    padding-block: 0.35rem;
+  }
+}

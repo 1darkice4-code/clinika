@@ -143,10 +143,10 @@ export function DirectionLanding({
         </section>
 
         <div className={`${home.shell} ${styles.priceContent}`}>
-          <section id="prices" className={styles.priceSection} aria-labelledby={`${slug}-prices`}>
+          <section id="prices" className={`${styles.priceSection} ${direction.priceBlock}`} aria-labelledby={`${slug}-prices`}>
             <h2 id={`${slug}-prices`} className={`${home.title} ${styles.sectionTitle}`}>{content.prices.title}</h2>
             <div className={`${styles.disclosureList} ${direction.priceTableWrap}`}>
-              <table className={styles.priceTable}>
+              <table className={`${styles.priceTable} ${head.length > 2 ? direction.stackedTable : ""}`}>
                 <thead>
                   <tr>
                     {head.map((cell) => (
@@ -167,7 +167,9 @@ export function DirectionLanding({
                         )}
                       </th>
                       {(row.cells ?? [row.price ?? ""]).map((cell, index) => (
-                        <td key={index} className={direction.priceCell}>{cell}</td>
+                        <td key={index} className={direction.priceCell} data-label={head[index + 1]}>
+                          {cell}
+                        </td>
                       ))}
                     </tr>
                   ))}

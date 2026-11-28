@@ -290,3 +290,8 @@
   font-size: 0.88rem;
   line-height: 1.45;
 }
+
+/* Якоря (#prices и др.) не уезжают под закреплённую шапку. */
+.priceSection {
+  scroll-margin-top: 6.5rem;
+}
