@@ -140,19 +140,21 @@ export function DirectionLanding({
             </div>
             {content.image.cutout ? (
               <div className={direction.mastheadFigure}>
-                <span className={direction.figureGlow} aria-hidden="true" />
-                <span className={direction.figureRing} aria-hidden="true" />
-                <Sparkle className={`${direction.figureSparkle} ${direction.figureSparkleLarge}`} />
-                <Sparkle className={`${direction.figureSparkle} ${direction.figureSparkleSmall}`} />
-                <Image
-                  src={content.image.src}
-                  alt={content.image.alt}
-                  width={content.image.width ?? 848}
-                  height={content.image.height ?? 1264}
-                  sizes="(max-width: 760px) 80vw, 30vw"
-                  preload
-                  className={direction.figureImage}
-                />
+                <div className={direction.figureStage}>
+                  <span className={direction.figureGlow} aria-hidden="true" />
+                  <span className={direction.figureRing} aria-hidden="true" />
+                  <CompassStar className={`${direction.figureStar} ${direction.figureStarLarge}`} />
+                  <CompassStar className={`${direction.figureStar} ${direction.figureStarSmall}`} />
+                  <Image
+                    src={content.image.src}
+                    alt={content.image.alt}
+                    width={content.image.width ?? 848}
+                    height={content.image.height ?? 736}
+                    sizes="(max-width: 760px) 86vw, 34rem"
+                    preload
+                    className={direction.figureImage}
+                  />
+                </div>
               </div>
             ) : (
               <div className={direction.mastheadPhoto}>
@@ -296,11 +298,12 @@ export function DirectionLanding({
   );
 }
 
-/** Четырёхлучевая звёздочка, как в логотипе «Сияния». */
-function Sparkle({ className }: { className: string }) {
+/** Восьмилучевая звезда, как в логотипе «Сияния»: у каждого луча светлая и тёмная грань. */
+function CompassStar({ className }: { className: string }) {
   return (
-    <svg className={className} viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-      <path d="M12 0c.6 5.6 2.6 9.8 12 12-9.4 2.2-11.4 6.4-12 12-.6-5.6-2.6-9.8-12-12C9.4 9.8 11.4 5.6 12 0Z" fill="currentColor" />
+    <svg className={className} viewBox="-50 -50 100 100" aria-hidden="true" focusable="false">
+      <path d="M0 0L0.00 -50.00 -4.40 -10.62Z M0 0L25.46 -25.46 4.40 -10.62Z M0 0L50.00 0.00 10.62 -4.40Z M0 0L25.46 25.46 10.62 4.40Z M0 0L0.00 50.00 4.40 10.62Z M0 0L-25.46 25.46 -4.40 10.62Z M0 0L-50.00 0.00 -10.62 4.40Z M0 0L-25.46 -25.46 -10.62 -4.40Z" fill="#e3c48c" />
+      <path d="M0 0L0.00 -50.00 4.40 -10.62Z M0 0L25.46 -25.46 10.62 -4.40Z M0 0L50.00 0.00 10.62 4.40Z M0 0L25.46 25.46 4.40 10.62Z M0 0L0.00 50.00 -4.40 10.62Z M0 0L-25.46 25.46 -10.62 4.40Z M0 0L-50.00 0.00 -10.62 -4.40Z M0 0L-25.46 -25.46 -4.40 -10.62Z" fill="#a3834c" />
     </svg>
   );
 }

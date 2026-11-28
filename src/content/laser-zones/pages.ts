@@ -180,7 +180,7 @@ export const litsoPage = buildLaserZonePage({
   lead: "Верхняя губа (усики), подбородок, шея или лицо полностью. Сеанс — от 15 минут.",
   zones: ["laser-upper-lip", "laser-chin", "laser-neck", "laser-full-face"],
   image: {
-    src: "/clinic/model-litso-cutout.webp",
+    src: "/clinic/model-litso-bust.webp",
     alt: "Лазерная эпиляция лица: модель с гладкой кожей лица, шеи и плеч",
     cutout: true
   },
