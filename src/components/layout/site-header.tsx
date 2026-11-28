@@ -20,6 +20,7 @@ export interface SiteHeaderProps {
 const navLinks = [
   { href: "/#services", label: "Услуги" },
   { href: "/prices", label: "Прайс" },
+  { href: "/akcii", label: "Акции" },
   { href: "/#specialists", label: "Специалисты" },
   { href: "/#reviews", label: "Отзывы" },
   { href: "/#contacts", label: "Контакты" }

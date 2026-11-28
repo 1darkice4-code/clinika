@@ -1,61 +1,71 @@
 import "dotenv/config";
 import { PrismaClient } from "@prisma/client/index";
-import { LASER_COMBO } from "../src/domain/service/laser-combo";
+import { LASER_COMBOS, comboRegularPrice, type LaserCombo } from "../src/domain/service/laser-combo";
 
 const prisma = new PrismaClient();
 
-async function publishLaserCombo() {
+async function publishCombo(combo: LaserCombo) {
+  if (combo.price >= comboRegularPrice(combo)) {
+    throw new Error(`Комплекс ${combo.slug} должен стоить меньше суммы зон.`);
+  }
   return prisma.$transaction(async (tx) => {
-    const existing = await tx.service.findUnique({ where: { slug: LASER_COMBO.slug } });
-    if (existing) return existing;
-
     const zones = await tx.service.findMany({
       where: {
-        slug: { in: [...LASER_COMBO.zoneSlugs] },
+        slug: { in: [...combo.zoneSlugs] },
         isActive: true,
         deletedAt: null,
         category: { isActive: true, deletedAt: null },
         requiresResource: { isActive: true, deletedAt: null }
       }
     });
-    const [first, second] = zones;
+    const [first] = zones;
     if (
-      !first ||
-      !second ||
-      !first.requiresResourceId ||
-      first.requiresResourceId !== second.requiresResourceId ||
-      first.categoryId !== second.categoryId ||
-      first.currency !== second.currency ||
-      first.priceExact === null ||
-      second.priceExact === null
+      zones.length !== combo.zoneSlugs.length ||
+      !first?.requiresResourceId ||
+      zones.some(
+        (zone) =>
+          zone.requiresResourceId !== first.requiresResourceId ||
+          zone.categoryId !== first.categoryId ||
+          zone.currency !== first.currency
+      )
     ) {
-      throw new Error("Для комплекса нужны две активные зоны с фиксированной ценой и общим аппаратом.");
+      throw new Error(`Для комплекса ${combo.slug} нужны активные зоны с общим аппаратом и категорией.`);
     }
 
+    const data = {
+      name: combo.name,
+      categoryId: first.categoryId,
+      requiresResourceId: first.requiresResourceId,
+      shortDescription: `Лазерная эпиляция ${zones.length} зон за один визит.`,
+      fullDescription: `Лазерная эпиляция за один визит: ${zones.map((zone) => zone.name.replace(/^Лазерная эпиляция — /, "").toLowerCase()).join(", ")}.`,
+      currency: first.currency,
+      priceFrom: null,
+      priceExact: combo.price,
+      durationMinutes: zones.reduce((sum, zone) => sum + zone.durationMinutes, 0),
+      bufferBeforeMinutes: Math.max(...zones.map((zone) => zone.bufferBeforeMinutes)),
+      bufferAfterMinutes: Math.max(...zones.map((zone) => zone.bufferAfterMinutes)),
+      isActive: true,
+      deletedAt: null
+    };
     return tx.service.upsert({
-      where: { slug: LASER_COMBO.slug },
-      update: {},
-      create: {
-        slug: LASER_COMBO.slug,
-        name: LASER_COMBO.name,
-        categoryId: first.categoryId,
-        requiresResourceId: first.requiresResourceId,
-        shortDescription: "Лазерная эпиляция двух зон за один визит.",
-        fullDescription: "Лазерная эпиляция глубокого бикини и подмышек за один визит.",
-        currency: first.currency,
-        priceExact: first.priceExact + second.priceExact,
-        durationMinutes: first.durationMinutes + second.durationMinutes,
-        bufferBeforeMinutes: Math.max(first.bufferBeforeMinutes, second.bufferBeforeMinutes),
-        bufferAfterMinutes: Math.max(first.bufferAfterMinutes, second.bufferAfterMinutes),
-        sortOrder: 100
-      }
+      where: { slug: combo.slug },
+      update: data,
+      create: { ...data, slug: combo.slug, sortOrder: 100 }
     });
   });
 }
 
-publishLaserCombo()
-  .then(({ slug, priceExact, durationMinutes, isActive, deletedAt }) => {
-    console.info({ slug, priceExact, durationMinutes, active: isActive && !deletedAt });
+async function publishLaserCombos() {
+  const results = [];
+  for (const combo of LASER_COMBOS) results.push(await publishCombo(combo));
+  return results;
+}
+
+publishLaserCombos()
+  .then((services) => {
+    for (const { slug, priceExact, durationMinutes, isActive } of services) {
+      console.info({ slug, priceExact, durationMinutes, active: isActive });
+    }
   })
   .catch((error: unknown) => {
     console.error(error);

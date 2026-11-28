@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { DirectionLanding } from "@/components/direction/direction-landing";
+import { PromoBanner } from "@/components/promo/promo-banner";
 import { directionMetadata } from "@/content/directions/metadata";
 import { LASER_ZONE_LINKS, LASER_ZONE_PAGES } from "@/content/laser-zones/pages";
 import { getPublicContacts } from "@/domain/booking/public-catalog";
@@ -28,6 +29,7 @@ export default async function LaserZonePage({ params }: PageProps) {
       offers={page.offers}
       contacts={contacts}
       related={{ title: "Лазерная эпиляция других зон", links: LASER_ZONE_LINKS }}
+      afterPrices={<PromoBanner />}
     />
   );
 }

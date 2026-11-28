@@ -5,6 +5,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { CLINIC_CONTACTS, CLINIC_SITE_URL } from "@/config/clinic";
 import { FEATURED_REVIEW_SOURCE_URL } from "@/domain/review/featured-reviews";
+import { PromoBanner } from "@/components/promo/promo-banner";
 import { LASER_SERVICES, PER_UNIT_PRICE_SLUGS } from "@/domain/service/current-price-list";
 import { FEATURED_SPECIALIST } from "@/domain/specialist/featured-specialist";
 import { buildDirectionsUrl, buildMapEmbedUrl } from "@/lib/map";
@@ -203,6 +204,9 @@ export default async function HomePage({
               <Link href="/prices" className={styles.textLink}>
                 Полный прайс <ArrowUpRight aria-hidden="true" size={17} />
               </Link>
+            </div>
+            <div className={styles.promoSlot}>
+              <PromoBanner headingLevel={3} />
             </div>
             <div className={styles.serviceList}>
               <details className={styles.service} data-testid="service-card">

@@ -1,0 +1,209 @@
+.banner {
+  display: grid;
+  gap: clamp(1.1rem, 3vw, 1.6rem);
+  padding: clamp(1.25rem, 3.5vw, 2.25rem);
+  border-radius: clamp(1rem, 2.5vw, 1.6rem);
+  background: radial-gradient(ellipse at 90% 0%, #3b352a, transparent 60%), var(--night);
+  color: var(--white);
+}
+
+.eyebrow {
+  color: var(--brass);
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.title {
+  margin-top: 0.35rem;
+  font-family: var(--font-wordmark, Georgia, serif);
+  font-size: clamp(1.8rem, 4.4vw, 3rem);
+  font-weight: 400;
+  line-height: 1.1;
+  text-wrap: balance;
+}
+
+.offers {
+  display: grid;
+  gap: 0.75rem;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 14rem), 1fr));
+}
+
+.offer {
+  display: grid;
+  align-content: start;
+  gap: 0.35rem;
+  min-width: 0;
+  padding: 1rem 1.1rem;
+  border: 1px solid rgb(223 189 130 / 28%);
+  border-radius: 0.9rem;
+  background: rgb(255 255 255 / 4%);
+}
+
+.offerTitle {
+  color: #e9e3d7;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.offerValue {
+  color: var(--brass);
+  font-size: clamp(1.35rem, 3vw, 1.7rem);
+  font-weight: 750;
+  line-height: 1.15;
+  font-variant-numeric: tabular-nums;
+}
+
+.was {
+  margin-left: 0.4rem;
+  color: #a9a194;
+  font-size: 0.95rem;
+  font-weight: 500;
+  text-decoration: line-through;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.6rem 1.4rem;
+}
+
+.cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  min-height: 3rem;
+  padding: 0 1.4rem;
+  border-radius: 999px;
+  background: var(--brass);
+  color: #231a0c;
+  font-weight: 700;
+}
+
+.cta:hover {
+  filter: brightness(1.06);
+}
+
+.link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  color: var(--white);
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+}
+
+.fine {
+  color: #b9b2a5;
+  font-size: 0.78rem;
+  line-height: 1.5;
+}
+
+/* Страница /akcii */
+.cards {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 16rem), 1fr));
+}
+
+.card {
+  display: grid;
+  align-content: start;
+  gap: 0.6rem;
+  min-width: 0;
+  padding: clamp(1.1rem, 3vw, 1.6rem);
+  border: 1px solid var(--line);
+  border-radius: 1rem;
+  background: var(--white);
+}
+
+.badge {
+  justify-self: start;
+  padding: 0.2rem 0.65rem;
+  border-radius: 999px;
+  background: #f1e5cf;
+  color: var(--brass-ink);
+  font-size: 0.78rem;
+  font-weight: 750;
+}
+
+.cardTitle {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.cardPrice {
+  color: var(--ink);
+  font-size: 1.6rem;
+  font-weight: 750;
+  font-variant-numeric: tabular-nums;
+}
+
+.cardPrice .was {
+  color: var(--muted);
+}
+
+.cardText {
+  color: var(--muted);
+  line-height: 1.55;
+}
+
+.cardCta {
+  justify-self: start;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  margin-top: 0.3rem;
+  color: var(--brass-ink);
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+}
+
+.steps {
+  display: grid;
+  gap: 0.75rem;
+  counter-reset: step;
+  max-width: 68ch;
+  margin-top: 1rem;
+  padding: 0;
+  list-style: none;
+}
+
+.steps li {
+  position: relative;
+  padding-left: 2.4rem;
+  color: var(--muted);
+  line-height: 1.6;
+  counter-increment: step;
+}
+
+.steps li::before {
+  position: absolute;
+  left: 0;
+  top: 0;
+  display: grid;
+  place-items: center;
+  width: 1.7rem;
+  height: 1.7rem;
+  border-radius: 50%;
+  background: var(--night);
+  color: var(--brass);
+  font-size: 0.85rem;
+  font-weight: 700;
+  content: counter(step);
+}
+
+.notice {
+  padding: 0.85rem 1rem;
+  border: 1px solid #e3cf9f;
+  border-radius: 0.8rem;
+  background: #fbf3e2;
+  color: #4b3d22;
+  font-size: 0.9rem;
+  line-height: 1.5;
+}

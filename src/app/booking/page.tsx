@@ -3,7 +3,8 @@ import { Phone } from "lucide-react";
 import { BookingForm } from "@/components/booking/booking-form";
 import { readCampaignQuery } from "@/domain/analytics/attribution";
 import { getPublicBookingCatalog } from "@/domain/booking/public-catalog";
-import { LASER_COMBO } from "@/domain/service/laser-combo";
+import { CURRENT_PROMO, isPromoActive, promoOffers } from "@/domain/promo/current-promo";
+import { LASER_COMBO, LASER_COMBO_SLUGS } from "@/domain/service/laser-combo";
 import { prisma } from "@/lib/prisma";
 import { ClinicPage } from "../clinic-page";
 import styles from "../clinic-pages.module.css";
@@ -36,7 +37,14 @@ export default async function BookingPage({
     initialService?.requiresResourceId || query.booking === "laser" ? "laser" : "doctor";
   const initialMode = query.request === "callback" ? "lead" : "appointment";
   const { attribution } = readCampaignQuery(query);
-  const isLaserCombo = initialService?.slug === LASER_COMBO.slug;
+  const isLaserCombo = Boolean(initialService && LASER_COMBO_SLUGS.has(initialService.slug));
+  // Запись по ссылке акции: помечаем комментарий и кампанию, чтобы администратор увидел акцию.
+  const promoApplied = query.promo === CURRENT_PROMO.code && isPromoActive();
+  const promoOffer = promoApplied
+    ? (promoOffers().find((offer) => offer.cta?.href.includes(`service=${initialService?.slug ?? "-"}`)) ??
+      promoOffers()[0])
+    : null;
+  const promoComment = promoOffer ? `Акция «${CURRENT_PROMO.name}»: ${promoOffer.bookingNote}.` : undefined;
 
   return (
     <ClinicPage phone={contacts.phone} address={contacts.address} email={contacts.email}>
@@ -50,10 +58,16 @@ export default async function BookingPage({
             <a href={`tel:${contacts.phone}`} className={home.heroLink}>
               <Phone size={16} aria-hidden="true" /> {contacts.phone}
             </a>
+            {promoComment && (
+              <p className={styles.promoNote} role="status">
+                {promoComment} Скидку администратор учтёт при подтверждении записи.
+              </p>
+            )}
           </div>
           <div className={`light ${styles.bookingPanel}`}>
             <BookingForm
-              key={`${initialMode}:${initialDirection}:${initialService?.id ?? ""}`}
+              key={`${initialMode}:${initialDirection}:${initialService?.id ?? ""}:${promoComment ?? ""}`}
+              initialComment={promoComment}
               bookingDate={bookingDate}
               initialMode={initialMode}
               initialDirection={initialDirection}
@@ -61,7 +75,8 @@ export default async function BookingPage({
               startWithTime={isLaserCombo}
               attribution={{
                 ...attribution,
-                landingPage: isLaserCombo ? `/services/${LASER_COMBO.slug}` : undefined
+                ...(promoApplied && !attribution.utmCampaign ? { utmCampaign: CURRENT_PROMO.code } : {}),
+                landingPage: initialService?.slug === LASER_COMBO.slug ? `/services/${LASER_COMBO.slug}` : undefined
               }}
               marketingConsent={marketingConsent}
               services={services}

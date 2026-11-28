@@ -1,5 +1,5 @@
 import type { PublicBookingCatalog } from "./public-catalog";
-import { LASER_COMBO } from "@/domain/service/laser-combo";
+import { LASER_COMBO, LASER_FULL_BODY_COMBO } from "@/domain/service/laser-combo";
 
 const laserAliases: Record<string, RegExp> = {
   "laser-upper-lip": /усик|усы|верхн\S* губ/,
@@ -16,9 +16,14 @@ const laserAliases: Record<string, RegExp> = {
 
 export function findAssistantService(question: string, services: PublicBookingCatalog["services"]) {
   const normalized = question.toLowerCase().replaceAll("ё", "е");
-  if (LASER_COMBO.zoneSlugs.every((slug) => laserAliases[slug].test(normalized))) {
-    const combo = services.find((service) => service.slug === LASER_COMBO.slug);
-    if (combo) return combo;
+  // Сначала больший комплекс: «ноги полностью + бикини + подмышки» включает «бикини + подмышки».
+  for (const combo of [LASER_FULL_BODY_COMBO, LASER_COMBO]) {
+    const mentioned =
+      combo.zoneSlugs.every((slug) => laserAliases[slug].test(normalized)) ||
+      (combo === LASER_FULL_BODY_COMBO && /вс[её]\s+тело/.test(normalized));
+    if (!mentioned) continue;
+    const service = services.find((item) => item.slug === combo.slug);
+    if (service) return service;
   }
   const alias = services.find((service) => laserAliases[service.slug]?.test(normalized));
   if (alias) return alias;

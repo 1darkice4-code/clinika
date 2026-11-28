@@ -1,5 +1,5 @@
 import type { PrismaClient } from "@prisma/client/index";
-import { LASER_COMBO } from "./laser-combo";
+import { LASER_COMBO_SLUGS } from "./laser-combo";
 import {
   COSMETOLOGY_PRICE_GROUPS,
   CONSULTATION_SERVICES,
@@ -156,7 +156,7 @@ export async function publishCurrentPriceList(prisma: PrismaClient) {
 
     const activeServiceSlugs = [...activeCosmetologySlugs, ...activeLaserSlugs];
     await tx.service.updateMany({
-      where: { slug: { notIn: [...activeServiceSlugs, LASER_COMBO.slug] } },
+      where: { slug: { notIn: [...activeServiceSlugs, ...LASER_COMBO_SLUGS] } },
       data: { isActive: false, isFeatured: false }
     });
     await tx.serviceCategory.updateMany({

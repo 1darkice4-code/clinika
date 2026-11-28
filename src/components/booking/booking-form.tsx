@@ -53,6 +53,8 @@ export type BookingFormProps = {
   startWithTime?: boolean;
   attribution?: AttributionInput;
   utmSource?: string;
+  /** Текст, который заранее подставляется в комментарий (например, пометка об акции). */
+  initialComment?: string;
   marketingConsent?: { slug: string; version: string } | null;
 };
 
@@ -288,6 +290,7 @@ export function BookingForm({
   startWithTime,
   attribution,
   utmSource,
+  initialComment,
   marketingConsent
 }: BookingFormProps) {
   const [mode, setMode] = useState(initialMode);
@@ -960,6 +963,7 @@ export function BookingForm({
                 id="comment"
                 name="comment"
                 maxLength={1000}
+                defaultValue={initialComment}
                 placeholder="Пожелания или важная информация (необязательно)"
                 aria-invalid={Boolean(fieldErrors.comment)}
                 aria-describedby={fieldErrors.comment ? "comment-error" : "comment-hint"}

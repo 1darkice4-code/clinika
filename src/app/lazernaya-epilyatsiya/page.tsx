@@ -11,6 +11,8 @@ import home from "../home.module.css";
 import { RelatedDirections } from "@/components/direction/direction-landing";
 import { LASER_ZONE_LINKS } from "@/content/laser-zones/pages";
 import { LaserPriceList } from "@/components/pricing/laser-price-list";
+import { PromoBanner } from "@/components/promo/promo-banner";
+import { LASER_COMBO, comboRegularPrice } from "@/domain/service/laser-combo";
 import {
   aftercare,
   contraindications,
@@ -113,7 +115,12 @@ export default async function LaserHairRemovalPage() {
             <section className={laser.comboOffer} aria-labelledby="laser-combo-title">
               <div>
                 <h2 id="laser-combo-title">{combo.name}</h2>
-                <p>Две зоны за один визит · {formatPrice(null, combo.priceExact)}</p>
+                <p>
+                  Две зоны за один визит · {formatPrice(null, combo.priceExact)}
+                  {combo.priceExact !== null && combo.priceExact < comboRegularPrice(LASER_COMBO) && (
+                    <> вместо {formatPrice(null, comboRegularPrice(LASER_COMBO))}</>
+                  )}
+                </p>
               </div>
               <Link
                 href={`/services/${combo.slug}?utm_source=site&utm_medium=internal`}
@@ -138,6 +145,8 @@ export default async function LaserHairRemovalPage() {
               <a href={`tel:${phone}`}>{phone}</a>.
             </p>
           </section>
+
+          <PromoBanner />
 
           <section className={`${styles.priceSection} ${styles.laserEquipment}`} aria-labelledby="laser-room">
             <Image
