@@ -3,9 +3,12 @@ import { ArrowUpRight, Mail, MapPin, Phone, Plus, Star } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { CLINIC_CONTACTS, CLINIC_SITE_URL } from "@/config/clinic";
+import { CLINIC_CONTACTS } from "@/config/clinic";
 import { FEATURED_REVIEW_SOURCE_URL } from "@/domain/review/featured-reviews";
 import { PromoBanner } from "@/components/promo/promo-banner";
+import { JsonLd } from "@/components/seo/json-ld";
+import { getPublicContacts } from "@/domain/booking/public-catalog";
+import { CLINIC_ID, clinicNode, jsonLdGraph, webPageNode, websiteNode } from "@/lib/clinic-structured-data";
 import { LASER_SERVICES, PER_UNIT_PRICE_SLUGS } from "@/domain/service/current-price-list";
 import { FEATURED_SPECIALIST } from "@/domain/specialist/featured-specialist";
 import { buildDirectionsUrl, buildMapEmbedUrl } from "@/lib/map";
@@ -20,7 +23,7 @@ export const dynamic = "force-dynamic";
 
 const title = "Клиника «Сияние» в Чите — косметология и лазерная эпиляция";
 const description =
-  "Клиника красоты и здоровья «Сияние» в Чите, ул. Суглинная, 2Б. Приём врача-косметолога, лазерная эпиляция и массаж. Цены и запись онлайн.";
+  "Клиника эстетической медицины «Сияние» в Чите, ул. Суглинная, 2Б: лазерная эпиляция, ботулинотерапия, контурная пластика, приём дерматолога. Цены онлайн.";
 
 export const metadata: Metadata = {
   title: { absolute: title },
@@ -33,8 +36,9 @@ export const metadata: Metadata = {
     url: "/",
     title,
     description,
-    images: ["/clinic/treatment-room.webp"]
-  }
+    images: [{ url: "/clinic/treatment-room.webp", alt: "Кабинет клиники эстетической медицины «Сияние» в Чите" }]
+  },
+  twitter: { card: "summary_large_image", title, description }
 };
 
 async function getHomeData() {
@@ -163,35 +167,24 @@ export default async function HomePage({
   const consultation =
     cosmeticServices.find((service) => service.slug === "cosmetologist-consultation") ??
     cosmeticServices.find((service) => /консультац/i.test(service.name));
-  const clinicStructuredData = {
-    "@context": "https://schema.org",
-    "@type": ["MedicalClinic", "LocalBusiness"],
-    "@id": `${CLINIC_SITE_URL}/#clinic`,
-    name: "Клиника красоты и здоровья «Сияние»",
-    url: `${CLINIC_SITE_URL}/`,
-    description,
-    image: `${CLINIC_SITE_URL}/clinic/treatment-room.webp`,
-    logo: `${CLINIC_SITE_URL}/brand/siyanie-round.webp`,
-    telephone: phone.replace(/[^+0-9]/g, ""),
-    email,
-    address: {
-      "@type": "PostalAddress",
-      streetAddress: address.replace(/^Чита,\s*/i, ""),
-      addressLocality: "Чита",
-      addressRegion: "Забайкальский край",
-      addressCountry: "RU"
-    }
-  };
+  const schemaContacts = await getPublicContacts();
+  const clinicStructuredData = jsonLdGraph([
+    { ...clinicNode(schemaContacts), description },
+    websiteNode(),
+    webPageNode({
+      path: "/",
+      name: "Клиника «Сияние» в Чите — косметология и лазерная эпиляция",
+      description,
+      image: "/clinic/treatment-room.webp",
+      hasBreadcrumbs: false,
+      about: CLINIC_ID
+    })
+  ]);
 
   return (
     <ClinicPage phone={phone} address={address}>
       <main id="clinic-main" tabIndex={-1}>
-        <script
-          type="application/ld+json"
-          dangerouslySetInnerHTML={{
-            __html: JSON.stringify(clinicStructuredData).replace(/</g, "\\u003c")
-          }}
-        />
+        <JsonLd data={clinicStructuredData} />
         <ClinicHero address={address} />
 
         <section id="services" className={styles.section}>

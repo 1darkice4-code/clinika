@@ -2,9 +2,12 @@ import type { Metadata } from "next";
 import { ArrowDown, ArrowUpRight } from "lucide-react";
 import Link from "next/link";
 import { LaserPriceList } from "@/components/pricing/laser-price-list";
-import { getPublicLaserPricing } from "@/domain/booking/public-catalog";
+import { JsonLd } from "@/components/seo/json-ld";
+import { CLINIC_SITE_URL } from "@/config/clinic";
+import { getPublicContacts, getPublicLaserPricing } from "@/domain/booking/public-catalog";
+import { breadcrumbNode, clinicNode, CLINIC_ID, jsonLdGraph, webPageNode, websiteNode } from "@/lib/clinic-structured-data";
 import { MEDICAL_WARNING } from "@/components/direction/direction-landing";
-import { LASER_SHAVING_PRICE, PUBLIC_COSMETOLOGY_PRICE_GROUPS } from "@/domain/service/current-price-list";
+import { LASER_SERVICES, LASER_SHAVING_PRICE, PUBLIC_COSMETOLOGY_PRICE_GROUPS } from "@/domain/service/current-price-list";
 import { formatPrice } from "@/lib/utils";
 import { ClinicPage } from "../clinic-page";
 import styles from "../clinic-pages.module.css";
@@ -15,7 +18,17 @@ export const metadata: Metadata = {
   title: "Цены на косметологию и лазерную эпиляцию в Чите",
   description:
     "Прайс клиники «Сияние» в Чите: консультации косметолога, процедуры и лазерная эпиляция по зонам. Цены за один сеанс и курсы.",
-  alternates: { canonical: "/prices" }
+  alternates: { canonical: "/prices" },
+  openGraph: {
+    type: "website",
+    locale: "ru_RU",
+    siteName: "Сияние",
+    url: "/prices",
+    title: "Цены на косметологию и лазерную эпиляцию в Чите",
+    description:
+      "Прайс клиники «Сияние» в Чите: консультации косметолога, процедуры и лазерная эпиляция по зонам. Цены за один сеанс и курсы.",
+    images: [{ url: "/clinic/treatment-room.webp", alt: "Кабинет клиники «Сияние»" }]
+  }
 };
 
 export const dynamic = "force-dynamic";
@@ -29,10 +42,52 @@ const GROUP_LINKS: Record<string, { href: string; label: string }[]> = {
 };
 
 export default async function PricesPage() {
-  const { contacts: { phone, address, email }, bookableZones } = await getPublicLaserPricing();
+  const [{ contacts: { phone, address, email }, bookableZones }, schemaContacts] = await Promise.all([
+    getPublicLaserPricing(),
+    getPublicContacts()
+  ]);
+  const offer = (name: string, price: number) => ({
+    "@type": "Offer",
+    price,
+    priceCurrency: "RUB",
+    seller: { "@id": CLINIC_ID },
+    itemOffered: { "@type": "Service", name, provider: { "@id": CLINIC_ID } }
+  });
+  const structuredData = jsonLdGraph([
+    clinicNode(schemaContacts),
+    websiteNode(),
+    webPageNode({
+      path: "/prices",
+      name: String(metadata.title),
+      description: String(metadata.description),
+      about: `${CLINIC_SITE_URL}/prices#catalog`
+    }),
+    {
+      "@type": "OfferCatalog",
+      "@id": `${CLINIC_SITE_URL}/prices#catalog`,
+      name: "Услуги и цены клиники «Сияние»",
+      itemListElement: [
+        {
+          "@type": "OfferCatalog",
+          name: "Лазерная эпиляция",
+          itemListElement: LASER_SERVICES.map((zone) => offer(`Лазерная эпиляция — ${zone.group.toLowerCase()}, ${zone.zone.toLowerCase()}`, zone.prices.one))
+        },
+        ...PUBLIC_COSMETOLOGY_PRICE_GROUPS.map((group) => ({
+          "@type": "OfferCatalog",
+          name: group.name,
+          itemListElement: group.items.flatMap((item) => {
+            const price = item.priceExact ?? item.priceFrom ?? null;
+            return price && price > 0 ? [offer(item.name, price)] : [];
+          })
+        }))
+      ]
+    },
+    breadcrumbNode("/prices", [{ name: "Цены", path: "/prices" }])
+  ]);
 
   return (
     <ClinicPage phone={phone} address={address} email={email}>
+      <JsonLd data={structuredData} />
       <main id="clinic-main" tabIndex={-1}>
         <div className={price.stage}>
           <div className={home.shell}>

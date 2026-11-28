@@ -1,9 +1,21 @@
 import { CLINIC_SITE_URL } from "@/config/clinic";
+import {
+  breadcrumbNode,
+  clinicNode,
+  CLINIC_ID,
+  jsonLdGraph,
+  webPageNode,
+  websiteNode,
+  type ClinicSchemaContacts
+} from "@/lib/clinic-structured-data";
+
+export { serializeJsonLd } from "@/lib/clinic-structured-data";
 
 export type DirectionOffer = { name: string; price: number; url?: string; unitText?: string };
 
 /**
- * JSON-LD для страниц направлений: клиника, услуга с ценами, FAQ и хлебные крошки.
+ * JSON-LD для страниц услуг: клиника, сайт, страница, услуга с ценами, FAQ и хлебные крошки —
+ * связанные через @id в один граф.
  */
 export function buildDirectionStructuredData({
   path,
@@ -12,12 +24,11 @@ export function buildDirectionStructuredData({
   serviceType,
   breadcrumb,
   parent,
-  phone,
-  address,
-  email,
+  image = "/clinic/treatment-room.webp",
   offers,
-  questions
-}: {
+  questions,
+  ...contacts
+}: ClinicSchemaContacts & {
   path: string;
   title: string;
   description: string;
@@ -25,95 +36,78 @@ export function buildDirectionStructuredData({
   breadcrumb: string;
   /** Родительская страница для хлебных крошек (без главной). */
   parent?: { name: string; path: string };
-  phone: string;
-  address: string;
-  email?: string;
+  image?: string;
   offers: DirectionOffer[];
   questions: readonly { question: string; answer: string }[];
 }) {
   const pageUrl = `${CLINIC_SITE_URL}${path}`;
-  const clinicId = `${CLINIC_SITE_URL}/#clinic`;
-  const [locality, ...street] = address.split(",").map((part) => part.trim());
+  const serviceId = `${pageUrl}#service`;
   const prices = offers.map((offer) => offer.price);
+  const [locality] = contacts.address.split(",").map((part) => part.trim());
 
-  return {
-    "@context": "https://schema.org",
-    "@graph": [
-      {
-        "@type": "MedicalClinic",
-        "@id": clinicId,
-        name: "Сияние",
-        url: `${CLINIC_SITE_URL}/`,
-        telephone: phone,
-        ...(email ? { email } : {}),
-        image: `${CLINIC_SITE_URL}/clinic/treatment-room.webp`,
-        address: {
-          "@type": "PostalAddress",
-          addressCountry: "RU",
-          addressLocality: locality,
-          streetAddress: street.join(", ")
+  const service = {
+    "@type": "Service",
+    "@id": serviceId,
+    name: title,
+    serviceType,
+    description,
+    url: pageUrl,
+    image: `${CLINIC_SITE_URL}${image}`,
+    provider: { "@id": CLINIC_ID },
+    areaServed: { "@type": "City", name: locality },
+    ...(offers.length
+      ? {
+          offers: {
+            "@type": "AggregateOffer",
+            priceCurrency: "RUB",
+            lowPrice: Math.min(...prices),
+            highPrice: Math.max(...prices),
+            offerCount: offers.length,
+            offers: offers.map((offer) => ({
+              "@type": "Offer",
+              name: offer.name,
+              price: offer.price,
+              priceCurrency: "RUB",
+              availability: "https://schema.org/InStock",
+              seller: { "@id": CLINIC_ID },
+              ...(offer.url ? { url: `${CLINIC_SITE_URL}${offer.url}` } : {}),
+              ...(offer.unitText
+                ? {
+                    priceSpecification: {
+                      "@type": "UnitPriceSpecification",
+                      price: offer.price,
+                      priceCurrency: "RUB",
+                      unitText: offer.unitText
+                    }
+                  }
+                : {})
+            }))
+          }
         }
-      },
-      {
-        "@type": "Service",
-        "@id": `${pageUrl}#service`,
-        name: title,
-        serviceType,
-        description,
-        url: pageUrl,
-        provider: { "@id": clinicId },
-        areaServed: { "@type": "City", name: locality },
-        ...(offers.length
-          ? {
-              offers: {
-                "@type": "AggregateOffer",
-                priceCurrency: "RUB",
-                lowPrice: Math.min(...prices),
-                highPrice: Math.max(...prices),
-                offerCount: offers.length,
-                offers: offers.map((offer) => ({
-                  "@type": "Offer",
-                  name: offer.name,
-                  price: offer.price,
-                  priceCurrency: "RUB",
-                  ...(offer.url ? { url: `${CLINIC_SITE_URL}${offer.url}` } : {}),
-                  ...(offer.unitText
-                    ? {
-                        priceSpecification: {
-                          "@type": "UnitPriceSpecification",
-                          price: offer.price,
-                          priceCurrency: "RUB",
-                          unitText: offer.unitText
-                        }
-                      }
-                    : {})
-                }))
-              }
-            }
-          : {})
-      },
-      {
-        "@type": "FAQPage",
-        "@id": `${pageUrl}#faq`,
-        mainEntity: questions.map(({ question, answer }) => ({
-          "@type": "Question",
-          name: question,
-          acceptedAnswer: { "@type": "Answer", text: answer }
-        }))
-      },
-      {
-        "@type": "BreadcrumbList",
-        itemListElement: [
-          { name: "Главная", item: `${CLINIC_SITE_URL}/` },
-          ...(parent ? [{ name: parent.name, item: `${CLINIC_SITE_URL}${parent.path}` }] : []),
-          { name: breadcrumb, item: pageUrl }
-        ].map((entry, index) => ({ "@type": "ListItem", position: index + 1, ...entry }))
-      }
-    ]
+      : {})
   };
-}
 
-/** JSON для <script type="application/ld+json">, безопасный для вставки в HTML. */
-export function serializeJsonLd(data: unknown) {
-  return JSON.stringify(data).replace(/</g, "\\u003c");
+  const faq = questions.length
+    ? [
+        {
+          "@type": "FAQPage",
+          "@id": `${pageUrl}#faq`,
+          url: pageUrl,
+          mainEntity: questions.map(({ question, answer }) => ({
+            "@type": "Question",
+            name: question,
+            acceptedAnswer: { "@type": "Answer", text: answer }
+          }))
+        }
+      ]
+    : [];
+
+  return jsonLdGraph([
+    clinicNode(contacts),
+    websiteNode(),
+    webPageNode({ path, name: title, description, image, about: serviceId, type: "MedicalWebPage" }),
+    service,
+    ...faq,
+    breadcrumbNode(path, [...(parent ? [parent] : []), { name: breadcrumb, path }])
+  ]);
 }

@@ -22,8 +22,10 @@ export type DirectionPerformer = {
 export type DirectionContent = {
   /** Путь страницы, например "/botulinoterapiya". */
   path: string;
-  /** H1 и основа <title>. */
+  /** H1 страницы. */
   title: string;
+  /** <title> для поисковой выдачи, если должен отличаться от H1 (например, с «цены»). */
+  seoTitle?: string;
   metaDescription: string;
   /** Короткое название для хлебных крошек и перекрёстных ссылок. */
   shortName: string;

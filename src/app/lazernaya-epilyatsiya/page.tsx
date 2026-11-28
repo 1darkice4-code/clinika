@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { ArrowDown, ArrowUpRight, MapPin, Phone } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
-import { getPublicLaserPricing } from "@/domain/booking/public-catalog";
+import { getPublicContacts, getPublicLaserPricing } from "@/domain/booking/public-catalog";
 import { buildDirectionsUrl } from "@/lib/map";
 import { formatPrice } from "@/lib/utils";
 import { ClinicPage } from "../clinic-page";
@@ -31,8 +31,10 @@ const title = "Лазерная эпиляция в Чите";
 const description =
   "Лазерная эпиляция в клинике «Сияние» в Чите. Цены по зонам, курсы на 4, 6 и 10 сеансов, адрес кабинета и онлайн-запись.";
 
+const seoTitle = "Лазерная эпиляция в Чите — цены по зонам и курсы";
+
 export const metadata: Metadata = {
-  title,
+  title: seoTitle,
   description,
   alternates: { canonical: "/lazernaya-epilyatsiya" },
   openGraph: {
@@ -40,9 +42,9 @@ export const metadata: Metadata = {
     locale: "ru_RU",
     siteName: "Сияние",
     url: "/lazernaya-epilyatsiya",
-    title,
+    title: seoTitle,
     description,
-    images: ["/clinic/treatment-room.webp"]
+    images: [{ url: "/clinic/treatment-room.webp", alt: "Кабинет лазерной эпиляции клиники «Сияние»" }]
   }
 };
 
@@ -59,13 +61,13 @@ export default async function LaserHairRemovalPage() {
     startingPrice
   } = await getPublicLaserPricing();
 
+  const schemaContacts = await getPublicContacts();
   const structuredData = buildLaserStructuredData({
+    ...schemaContacts,
     path: "/lazernaya-epilyatsiya",
     title,
     description,
-    phone,
-    address,
-    email,
+    image: "/clinic/treatment-room.webp",
     zones: bookableZones,
     questions
   });

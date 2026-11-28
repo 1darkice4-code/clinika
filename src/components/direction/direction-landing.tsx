@@ -7,6 +7,7 @@ import styles from "@/app/clinic-pages.module.css";
 import direction from "@/app/direction.module.css";
 import home from "@/app/home.module.css";
 import type { DirectionContent, DirectionTextSection } from "@/content/directions/types";
+import type { ClinicSchemaContacts } from "@/lib/clinic-structured-data";
 import { buildDirectionStructuredData, serializeJsonLd, type DirectionOffer } from "@/lib/direction-structured-data";
 import { buildDirectionsUrl } from "@/lib/map";
 
@@ -69,14 +70,14 @@ function TextSection({ section, id, level = 2 }: { section: DirectionTextSection
 export function DirectionLanding({
   content,
   offers,
-  contacts: { phone, address, email },
+  contacts,
   afterPrices,
   beforeFaq,
   related
 }: {
   content: DirectionContent;
   offers: DirectionOffer[];
-  contacts: { phone: string; address: string; email?: string };
+  contacts: ClinicSchemaContacts;
   /** Блок сразу после цен — например, акция. */
   afterPrices?: ReactNode;
   /** Блок перед частыми вопросами — например, отзывы. */
@@ -84,16 +85,16 @@ export function DirectionLanding({
   /** Дополнительные перекрёстные ссылки, например другие зоны лазерной эпиляции. */
   related?: { title: string; links: readonly RelatedLink[] };
 }) {
+  const { phone, address, email } = contacts;
   const structuredData = buildDirectionStructuredData({
+    ...contacts,
     path: content.path,
     title: content.title,
     description: content.metaDescription,
     serviceType: content.serviceType,
     breadcrumb: content.shortName,
     parent: content.parent,
-    phone,
-    address,
-    email,
+    image: content.image.src,
     offers,
     questions: content.questions
   });

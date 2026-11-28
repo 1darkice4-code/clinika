@@ -201,10 +201,13 @@
   margin-top: 1.7rem;
 }
 
-.heroCopy > :not(.heroTitle) {
+.heroCopy > :not(.heroTitle, .heroHeading) {
   animation: arrive 720ms cubic-bezier(0.19, 0.72, 0.25, 1) both;
 }
-.heroDescription {
+/* Описание — самый крупный текст первого экрана (LCP). Оно сдвигается без растворения,
+   чтобы браузер и поисковики считали его отрисованным сразу. */
+.heroCopy > .heroDescription {
+  animation-name: arriveInPlace;
   animation-delay: 400ms;
 }
 .heroActions {
@@ -889,6 +892,15 @@
     translate: 8% 0;
   }
 }
+@keyframes arriveInPlace {
+  from {
+    translate: 0 0.8rem;
+  }
+  to {
+    translate: 0 0;
+  }
+}
+
 @keyframes arrive {
   from {
     opacity: 0;

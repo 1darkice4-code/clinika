@@ -49,6 +49,7 @@ export function buildLaserZonePage(input: LaserZonePageInput): LaserZonePage {
   const content: DirectionContent = {
     path,
     title: input.title,
+    seoTitle: `${input.title} — цены и курсы`,
     shortName: input.shortName,
     serviceType: "Лазерная эпиляция",
     metaDescription: input.metaDescription,

@@ -18,7 +18,8 @@ import {
   promoLastDayLabel,
   promoOffers
 } from "@/domain/promo/current-promo";
-import { serializeJsonLd } from "@/lib/direction-structured-data";
+import { JsonLd } from "@/components/seo/json-ld";
+import { breadcrumbNode, clinicNode, CLINIC_ID, jsonLdGraph, webPageNode, websiteNode } from "@/lib/clinic-structured-data";
 import { formatPrice } from "@/lib/utils";
 
 const title = "Акции на лазерную эпиляцию в Чите";
@@ -28,7 +29,8 @@ export const metadata: Metadata = {
   title,
   description,
   alternates: { canonical: "/akcii" },
-  openGraph: { type: "website", locale: "ru_RU", siteName: "Сияние", url: "/akcii", title, description, images: ["/clinic/laser-equipment.webp"] }
+  openGraph: { type: "website", locale: "ru_RU", siteName: "Сияние", url: "/akcii", title, description, images: [{ url: "/clinic/laser-equipment.webp", alt: "Аппарат для лазерной эпиляции в клинике «Сияние»" }] },
+  twitter: { card: "summary_large_image", title, description }
 };
 
 export const dynamic = "force-dynamic";
@@ -40,26 +42,45 @@ export default async function PromoPage() {
   const lastDay = promoLastDayLabel();
   const organizer = CLINIC_LEGAL.legalName ?? "клиника «Сияние»";
   const validThrough = `${CURRENT_PROMO.lastDay}T23:59:59+09:00`;
-  const structuredData = {
-    "@context": "https://schema.org",
-    "@type": "OfferCatalog",
-    name: `Акция «${CURRENT_PROMO.name}»`,
-    url: `${CLINIC_SITE_URL}/akcii`,
-    itemListElement: offers
-      .filter((offer) => offer.price)
-      .map((offer) => ({
-        "@type": "Offer",
-        name: `Лазерная эпиляция: ${offer.title}`,
-        price: offer.price?.now,
-        priceCurrency: "RUB",
-        validThrough,
-        url: `${CLINIC_SITE_URL}${offer.cta?.href ?? "/akcii"}`
-      }))
-  };
+  const catalogId = `${CLINIC_SITE_URL}/akcii#offers`;
+  const structuredData = jsonLdGraph([
+    clinicNode(contacts),
+    websiteNode(),
+    webPageNode({ path: "/akcii", name: title, description, image: "/clinic/laser-equipment.webp", about: active ? catalogId : undefined }),
+    ...(active
+      ? [
+          {
+            "@type": "OfferCatalog",
+            "@id": catalogId,
+            name: `Акция «${CURRENT_PROMO.name}»`,
+            url: `${CLINIC_SITE_URL}/akcii`,
+            itemListElement: offers
+              .filter((offer) => offer.price)
+              .map((offer) => ({
+                "@type": "Offer",
+                name: `Лазерная эпиляция: ${offer.title}`,
+                price: offer.price?.now,
+                priceCurrency: "RUB",
+                availability: "https://schema.org/InStock",
+                validThrough,
+                url: `${CLINIC_SITE_URL}${offer.cta?.href ?? "/akcii"}`,
+                seller: { "@id": CLINIC_ID },
+                itemOffered: {
+                  "@type": "Service",
+                  name: `Лазерная эпиляция: ${offer.title}`,
+                  serviceType: "Лазерная эпиляция",
+                  provider: { "@id": CLINIC_ID }
+                }
+              }))
+          }
+        ]
+      : []),
+    breadcrumbNode("/akcii", [{ name: "Акции", path: "/akcii" }])
+  ]);
 
   return (
     <ClinicPage phone={contacts.phone} address={contacts.address} email={contacts.email} bookingHref={promoBookingHref()}>
-      {active && <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: serializeJsonLd(structuredData) }} />}
+      <JsonLd data={structuredData} />
       <main id="clinic-main" tabIndex={-1}>
         <section className={direction.masthead} aria-labelledby="promo-title">
           <div className={`${home.shell} ${direction.mastheadInner}`}>

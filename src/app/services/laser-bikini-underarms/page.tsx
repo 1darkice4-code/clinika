@@ -4,7 +4,9 @@ import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { readCampaignQuery } from "@/domain/analytics/attribution";
-import { getPublicBookingCatalog } from "@/domain/booking/public-catalog";
+import { JsonLd } from "@/components/seo/json-ld";
+import { getPublicBookingCatalog, getPublicContacts } from "@/domain/booking/public-catalog";
+import { buildDirectionStructuredData } from "@/lib/direction-structured-data";
 import { LASER_COMBO } from "@/domain/service/laser-combo";
 import { LASER_SHAVING_PRICE } from "@/domain/service/current-price-list";
 import { buildDirectionsUrl } from "@/lib/map";
@@ -24,7 +26,16 @@ export const metadata: Metadata = {
   title,
   description,
   alternates: { canonical: path },
-  openGraph: { title, description, url: path, images: ["/clinic/treatment-room.webp"] }
+  openGraph: {
+    type: "website",
+    locale: "ru_RU",
+    siteName: "Сияние",
+    title,
+    description,
+    url: path,
+    images: [{ url: "/clinic/treatment-room.webp", alt: "Кабинет лазерной эпиляции клиники «Сияние»" }]
+  },
+  twitter: { card: "summary_large_image", title, description }
 };
 
 export default async function LaserComboPage({
@@ -32,7 +43,11 @@ export default async function LaserComboPage({
 }: {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
-  const [{ services, contacts }, query] = await Promise.all([getPublicBookingCatalog(), searchParams]);
+  const [{ services, contacts }, query, schemaContacts] = await Promise.all([
+    getPublicBookingCatalog(),
+    searchParams,
+    getPublicContacts()
+  ]);
   const combo = services.find(
     (service) => service.slug === LASER_COMBO.slug && service.requiresResourceId
   );
@@ -46,8 +61,22 @@ export default async function LaserComboPage({
   const directionsHref = buildDirectionsUrl(contacts.address);
   const telHref = `tel:${contacts.phone.replace(/[^+\d]/g, "")}`;
 
+  const structuredData = buildDirectionStructuredData({
+    ...schemaContacts,
+    path,
+    title,
+    description,
+    serviceType: "Лазерная эпиляция",
+    breadcrumb: "Бикини и подмышки",
+    parent: { name: "Лазерная эпиляция", path: "/lazernaya-epilyatsiya" },
+    image: "/clinic/treatment-room.webp",
+    offers: [{ name: combo.name, price: combo.priceExact, url: `/booking?booking=laser&service=${combo.slug}` }],
+    questions: []
+  });
+
   return (
     <ClinicPage {...contacts} bookingHref={bookingHref}>
+      <JsonLd data={structuredData} />
       <main id="clinic-main" tabIndex={-1}>
         <section className={styles.hero} aria-labelledby="combo-title">
           <div className={`${home.shell} ${styles.heroGrid}`}>

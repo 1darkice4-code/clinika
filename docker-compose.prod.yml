@@ -34,6 +34,8 @@ services:
       TELEGRAM_PROXY_URL: ${TELEGRAM_PROXY_URL:-http://telegram-proxy:10809}
       LOG_LEVEL: info
       RATE_LIMIT_ENABLED: "true"
+      GOOGLE_SITE_VERIFICATION: ${GOOGLE_SITE_VERIFICATION:-}
+      YANDEX_SITE_VERIFICATION: ${YANDEX_SITE_VERIFICATION:-}
       BOOKING_ASSISTANT_KEY_FILE: /run/secrets/booking-assistant
     secrets:
       - booking-assistant

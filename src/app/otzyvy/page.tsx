@@ -5,6 +5,8 @@ import styles from "@/app/clinic-pages.module.css";
 import direction from "@/app/direction.module.css";
 import home from "@/app/home.module.css";
 import { ReviewForm } from "@/components/reviews/review-form";
+import { JsonLd } from "@/components/seo/json-ld";
+import { breadcrumbNode, clinicNode, jsonLdGraph, webPageNode, websiteNode } from "@/lib/clinic-structured-data";
 import { ReviewCards } from "@/components/reviews/reviews-block";
 import list from "@/components/reviews/reviews.module.css";
 import { getPublicContacts } from "@/domain/booking/public-catalog";
@@ -14,7 +16,20 @@ const title = "Отзывы о клинике «Сияние» в Чите";
 const description =
   "Отзывы пациентов клиники «Сияние» в Чите о лазерной эпиляции и косметологии. Оставьте свой отзыв — он появится после проверки администратором.";
 
-export const metadata: Metadata = { title, description, alternates: { canonical: "/otzyvy" } };
+export const metadata: Metadata = {
+  title,
+  description,
+  alternates: { canonical: "/otzyvy" },
+  openGraph: {
+    type: "website",
+    locale: "ru_RU",
+    siteName: "Сияние",
+    url: "/otzyvy",
+    title,
+    description,
+    images: [{ url: "/clinic/treatment-room.webp", alt: "Кабинет клиники «Сияние»" }]
+  }
+};
 export const dynamic = "force-dynamic";
 
 function parseTopic(value: string | string[] | undefined): ReviewTopic | null {
@@ -38,8 +53,16 @@ export default async function ReviewsPage({
     { href: "/otzyvy?o=cosmetology", label: "Косметология", active: topic === "cosmetology" }
   ];
 
+  const structuredData = jsonLdGraph([
+    clinicNode(contacts),
+    websiteNode(),
+    webPageNode({ path: "/otzyvy", name: title, description, type: "CollectionPage" }),
+    breadcrumbNode("/otzyvy", [{ name: "Отзывы", path: "/otzyvy" }])
+  ]);
+
   return (
     <ClinicPage phone={contacts.phone} address={contacts.address} email={contacts.email}>
+      <JsonLd data={structuredData} />
       <main id="clinic-main" tabIndex={-1}>
         <section className={direction.masthead} aria-labelledby="reviews-title">
           <div className={`${home.shell} ${direction.mastheadInner}`}>

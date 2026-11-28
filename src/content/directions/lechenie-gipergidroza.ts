@@ -13,6 +13,7 @@ const rub = (value: number) => formatPrice(null, value);
 export const lechenieGipergidroza: DirectionContent = {
   path: "/lechenie-gipergidroza",
   title: "Лечение гипергидроза в Чите",
+  seoTitle: "Лечение гипергидроза в Чите — ботулинотерапия, цены",
   shortName: "Лечение гипергидроза",
   serviceType: "Лечение гипергидроза ботулинотерапией",
   metaDescription: `Лечение повышенной потливости (гипергидроза) ботулинотерапией в клинике «Сияние» в Чите. Подмышки, ладони, стопы. Эффект до 6–9 месяцев. Цена от ${rub(range.min)}.`,

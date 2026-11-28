@@ -1,4 +1,4 @@
-import { CLINIC_CONTACTS } from "@/config/clinic";
+import { CLINIC_CONTACTS, CLINIC_PROFILES } from "@/config/clinic";
 import { LASER_SERVICES, PUBLIC_HIDDEN_SERVICE_SLUGS } from "@/domain/service/current-price-list";
 import { LASER_COMBO } from "@/domain/service/laser-combo";
 import { nextDateInTimezone } from "@/lib/date-time";
@@ -87,14 +87,26 @@ export async function getPublicLaserPricing() {
   };
 }
 
+function profileLinks(...sources: unknown[]) {
+  const links = sources.flatMap((source) =>
+    source && typeof source === "object" ? Object.values(source as Record<string, unknown>) : []
+  );
+  return links.filter(
+    (link): link is string =>
+      typeof link === "string" && /^https:\/\//.test(link) && !/example|\.test\b|wa\.me|api\.whatsapp/i.test(link)
+  );
+}
+
 /** Контакты клиники для публичных страниц: настройки из CRM поверх значений по умолчанию. */
 export async function getPublicContacts() {
   const settings = await prisma.clinicSettings.findFirst({
-    select: { phone: true, email: true, address: true }
+    select: { phone: true, email: true, address: true, workingHoursJson: true, socialLinksJson: true }
   });
   return {
     phone: settings?.phone || CLINIC_CONTACTS.phone,
     email: settings?.email || CLINIC_CONTACTS.email,
-    address: settings?.address || CLINIC_CONTACTS.address
+    address: settings?.address || CLINIC_CONTACTS.address,
+    workingHours: settings?.workingHoursJson ?? undefined,
+    sameAs: [...new Set([...CLINIC_PROFILES, ...profileLinks(settings?.socialLinksJson)])]
   };
 }

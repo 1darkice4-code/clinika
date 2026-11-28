@@ -35,6 +35,18 @@ export const metadata: Metadata = {
     type: "website",
     locale: "ru_RU",
     siteName: "Сияние"
+  },
+  twitter: { card: "summary_large_image" },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: { index: true, follow: true, "max-image-preview": "large", "max-snippet": -1, "max-video-preview": -1 }
+  },
+  // Коды подтверждения из Google Search Console и Яндекс Вебмастера (метод «HTML-тег»).
+  // Задаются переменными окружения на сервере, без изменения кода.
+  verification: {
+    google: process.env.GOOGLE_SITE_VERIFICATION || undefined,
+    yandex: process.env.YANDEX_SITE_VERIFICATION || undefined
   }
 };
 

@@ -14,11 +14,10 @@ const rub = (value: number) => formatPrice(null, value);
 export const botulinoterapiya: DirectionContent = {
   path: "/botulinoterapiya",
   title: "Ботулинотерапия в Чите",
+  seoTitle: "Ботулинотерапия в Чите — цена за единицу",
   shortName: "Ботулинотерапия",
   serviceType: "Ботулинотерапия",
-  metaDescription:
-    "Ботулинотерапия мимических морщин в клинике «Сияние» в Чите: лоб, межбровье, «гусиные лапки». Процедуру проводит врач-дерматовенеролог. Цена от " +
-    `${rub(wrinkles.min)} за единицу препарата.`,
+  metaDescription: `Ботулинотерапия мимических морщин в Чите: лоб, межбровье, «гусиные лапки». Проводит врач-дерматовенеролог. От ${rub(wrinkles.min)} за единицу.`,
   lead: "Коррекция мимических морщин: лоб, межбровье, «гусиные лапки». Препарат и дозировку врач подбирает на осмотре.",
   priceBadge: `от ${rub(wrinkles.min)} за 1 ед.`,
   image: { src: "/clinic/consultation-room.webp", alt: "Кабинет врача-косметолога клиники «Сияние»" },
