@@ -48,6 +48,7 @@ export type DirectionContent = {
   parent?: { name: string; path: string };
   /** Разделы; соседние элементы массива-пары выводятся в две колонки. */
   sections: readonly (DirectionTextSection | readonly [DirectionTextSection, DirectionTextSection])[];
-  contraindications: { readonly intro: string; readonly items: readonly string[]; readonly note: string };
+  /** Для страниц процедур; у консультации блока противопоказаний нет. */
+  contraindications?: { readonly intro: string; readonly items: readonly string[]; readonly note: string };
   questions: readonly { question: string; answer: string }[];
 };

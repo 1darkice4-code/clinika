@@ -18,7 +18,9 @@ const RELATED = [
   { path: "/lazernaya-epilyatsiya", name: "Лазерная эпиляция" },
   { path: "/botulinoterapiya", name: "Ботулинотерапия" },
   { path: "/lechenie-gipergidroza", name: "Лечение гипергидроза" },
-  { path: "/konturnaya-plastika", name: "Контурная пластика" }
+  { path: "/konturnaya-plastika", name: "Контурная пластика" },
+  { path: "/konturnaya-plastika/guby", name: "Увеличение губ" },
+  { path: "/dermatolog-kosmetolog", name: "Дерматолог-косметолог" }
 ];
 
 export type RelatedLink = { path: string; name: string };
@@ -220,16 +222,18 @@ export function DirectionLanding({
             )
           )}
 
+          {content.contraindications && (
           <section className={`${styles.priceSection} ${direction.contraindications}`} aria-labelledby={`${slug}-contra`}>
             <h2 id={`${slug}-contra`} className={`${home.title} ${styles.sectionTitle}`}>Противопоказания</h2>
-            <p className={direction.bodyText}>{content.contraindications.intro}</p>
+            <p className={direction.bodyText}>{content.contraindications?.intro}</p>
             <ul className={direction.bulletList}>
-              {content.contraindications.items.map((item) => <li key={item}>{item}</li>)}
+              {content.contraindications?.items.map((item) => <li key={item}>{item}</li>)}
             </ul>
             <p className={direction.bodyText}>
-              {content.contraindications.note} <a href={`tel:${phone}`}>{phone}</a>
+              {content.contraindications?.note} <a href={`tel:${phone}`}>{phone}</a>
             </p>
           </section>
+          )}
 
           {beforeFaq}
 

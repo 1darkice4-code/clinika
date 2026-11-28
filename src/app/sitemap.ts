@@ -37,6 +37,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     page("/botulinoterapiya", 0.8),
     page("/lechenie-gipergidroza", 0.8),
     page("/konturnaya-plastika", 0.8),
+    page("/konturnaya-plastika/guby", 0.8),
+    page("/dermatolog-kosmetolog", 0.8),
     page("/prices", 0.8, "weekly"),
     page("/akcii", 0.7, "weekly"),
     page("/otzyvy", 0.6, "weekly"),

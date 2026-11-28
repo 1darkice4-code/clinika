@@ -249,6 +249,22 @@ export default async function HomePage({
                       </Link>
                     </li>
                     <li>
+                      <Link href="/dermatolog-kosmetolog">
+                        <span>Приём дерматолога-косметолога</span>
+                        <span>
+                          <ArrowUpRight aria-hidden="true" size={15} />
+                        </span>
+                      </Link>
+                    </li>
+                    <li>
+                      <Link href="/konturnaya-plastika/guby">
+                        <span>Увеличение губ</span>
+                        <span>
+                          <ArrowUpRight aria-hidden="true" size={15} />
+                        </span>
+                      </Link>
+                    </li>
+                    <li>
                       <Link href="/lechenie-gipergidroza">
                         <span>Лечение гипергидроза</span>
                         <span>

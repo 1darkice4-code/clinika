@@ -66,6 +66,8 @@ export function ClinicPage({
             <Link href="/botulinoterapiya">Ботулинотерапия</Link>
             <Link href="/lechenie-gipergidroza">Лечение гипергидроза</Link>
             <Link href="/konturnaya-plastika">Контурная пластика</Link>
+            <Link href="/konturnaya-plastika/guby">Увеличение губ</Link>
+            <Link href="/dermatolog-kosmetolog">Дерматолог-косметолог</Link>
             <Link href="/akcii">Акции</Link>
           </nav>
           <div className={styles.footerLegal}>

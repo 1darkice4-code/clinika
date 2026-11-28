@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { botulinoterapiya } from "@/content/directions/botulinoterapiya";
+import { dermatologKosmetolog } from "@/content/directions/dermatolog-kosmetolog";
 import { konturnayaPlastika } from "@/content/directions/konturnaya-plastika";
+import { uvelichenieGub } from "@/content/directions/uvelichenie-gub";
 import { lechenieGipergidroza } from "@/content/directions/lechenie-gipergidroza";
 import {
   BOTULINUM_PUBLIC_SERVICES,
@@ -30,7 +32,7 @@ describe("public botulinum names", () => {
   });
 
   it("keeps brand names out of the direction page texts", () => {
-    for (const content of [botulinoterapiya, lechenieGipergidroza, konturnayaPlastika]) {
+    for (const content of [botulinoterapiya, lechenieGipergidroza, konturnayaPlastika, uvelichenieGub, dermatologKosmetolog]) {
       expect(JSON.stringify(content)).not.toMatch(BRAND_PATTERN);
     }
   });

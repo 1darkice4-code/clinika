@@ -38,7 +38,11 @@ const GROUP_LINKS: Record<string, { href: string; label: string }[]> = {
     { href: "/botulinoterapiya", label: "О ботулинотерапии" },
     { href: "/lechenie-gipergidroza", label: "О лечении гипергидроза" }
   ],
-  "contour-plastic": [{ href: "/konturnaya-plastika", label: "О контурной пластике" }]
+  "contour-plastic": [
+    { href: "/konturnaya-plastika", label: "О контурной пластике" },
+    { href: "/konturnaya-plastika/guby", label: "Увеличение губ" }
+  ],
+  "cosmetology-consultations": [{ href: "/dermatolog-kosmetolog", label: "О приёме дерматолога-косметолога" }]
 };
 
 export default async function PricesPage() {
