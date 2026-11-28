@@ -11,6 +11,7 @@ export function buildDirectionStructuredData({
   description,
   serviceType,
   breadcrumb,
+  parent,
   phone,
   address,
   email,
@@ -22,6 +23,8 @@ export function buildDirectionStructuredData({
   description: string;
   serviceType: string;
   breadcrumb: string;
+  /** Родительская страница для хлебных крошек (без главной). */
+  parent?: { name: string; path: string };
   phone: string;
   address: string;
   email?: string;
@@ -101,9 +104,10 @@ export function buildDirectionStructuredData({
       {
         "@type": "BreadcrumbList",
         itemListElement: [
-          { "@type": "ListItem", position: 1, name: "Главная", item: `${CLINIC_SITE_URL}/` },
-          { "@type": "ListItem", position: 2, name: breadcrumb, item: pageUrl }
-        ]
+          { name: "Главная", item: `${CLINIC_SITE_URL}/` },
+          ...(parent ? [{ name: parent.name, item: `${CLINIC_SITE_URL}${parent.path}` }] : []),
+          { name: breadcrumb, item: pageUrl }
+        ].map((entry, index) => ({ "@type": "ListItem", position: index + 1, ...entry }))
       }
     ]
   };

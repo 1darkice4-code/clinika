@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import { ArrowDown, ArrowUpRight, MapPin, Phone } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
@@ -18,12 +19,22 @@ const RELATED = [
   { path: "/konturnaya-plastika", name: "Контурная пластика" }
 ];
 
-export function RelatedDirections({ currentPath }: { currentPath: string }) {
+export type RelatedLink = { path: string; name: string };
+
+export function RelatedDirections({
+  currentPath,
+  title = "Другие направления клиники",
+  links = RELATED
+}: {
+  currentPath: string;
+  title?: string;
+  links?: readonly RelatedLink[];
+}) {
   return (
-    <nav className={direction.related} aria-label="Другие направления">
-      <p>Другие направления клиники</p>
+    <nav className={direction.related} aria-label={title}>
+      <p>{title}</p>
       <ul>
-        {RELATED.filter((item) => item.path !== currentPath).map((item) => (
+        {links.filter((item) => item.path !== currentPath).map((item) => (
           <li key={item.path}>
             <Link href={item.path} className={home.textLink}>
               {item.name} <ArrowUpRight size={15} aria-hidden="true" />
@@ -58,11 +69,20 @@ function TextSection({ section, id, level = 2 }: { section: DirectionTextSection
 export function DirectionLanding({
   content,
   offers,
-  contacts: { phone, address, email }
+  contacts: { phone, address, email },
+  afterPrices,
+  beforeFaq,
+  related
 }: {
   content: DirectionContent;
   offers: DirectionOffer[];
   contacts: { phone: string; address: string; email?: string };
+  /** Блок сразу после цен — например, акция. */
+  afterPrices?: ReactNode;
+  /** Блок перед частыми вопросами — например, отзывы. */
+  beforeFaq?: ReactNode;
+  /** Дополнительные перекрёстные ссылки, например другие зоны лазерной эпиляции. */
+  related?: { title: string; links: readonly RelatedLink[] };
 }) {
   const structuredData = buildDirectionStructuredData({
     path: content.path,
@@ -70,13 +90,15 @@ export function DirectionLanding({
     description: content.metaDescription,
     serviceType: content.serviceType,
     breadcrumb: content.shortName,
+    parent: content.parent,
     phone,
     address,
     email,
     offers,
     questions: content.questions
   });
-  const slug = content.path.slice(1);
+  const slug = content.path.slice(1).replace(/\//g, "-");
+  const head = content.prices.head ?? ["Услуга", "Цена"];
   const longestWord = Math.max(...content.title.split(/\s+/).map((word) => word.length));
   const titleClass = `${home.title} ${direction.mastheadTitle} ${longestWord > 12 ? direction.mastheadTitleLong : ""}`;
 
@@ -87,6 +109,13 @@ export function DirectionLanding({
         <section className={direction.masthead} aria-labelledby={`${slug}-title`}>
           <div className={`${home.shell} ${direction.mastheadInner}`}>
             <div className={direction.mastheadCopy}>
+              {content.parent && (
+                <nav aria-label="Хлебные крошки" className={direction.breadcrumbs}>
+                  <Link href="/">Главная</Link>
+                  <span aria-hidden="true">/</span>
+                  <Link href={content.parent.path}>{content.parent.name}</Link>
+                </nav>
+              )}
               <h1 id={`${slug}-title`} className={titleClass}>
                 {content.title}
               </h1>
@@ -119,15 +148,26 @@ export function DirectionLanding({
               <table className={styles.priceTable}>
                 <thead>
                   <tr>
-                    <th scope="col">Услуга</th>
-                    <th scope="col">Цена</th>
+                    {head.map((cell) => (
+                      <th key={cell} scope="col">{cell}</th>
+                    ))}
                   </tr>
                 </thead>
                 <tbody>
                   {content.prices.rows.map((row) => (
                     <tr key={row.name}>
-                      <th scope="row">{row.name}</th>
-                      <td className={direction.priceCell}>{row.price}</td>
+                      <th scope="row">
+                        {row.href ? (
+                          <Link href={row.href} className={direction.rowLink}>
+                            {row.name}
+                          </Link>
+                        ) : (
+                          row.name
+                        )}
+                      </th>
+                      {(row.cells ?? [row.price ?? ""]).map((cell, index) => (
+                        <td key={index} className={direction.priceCell}>{cell}</td>
+                      ))}
                     </tr>
                   ))}
                 </tbody>
@@ -138,21 +178,23 @@ export function DirectionLanding({
             </p>
           </section>
 
+          {afterPrices}
+
           <section className={`${styles.priceSection} ${styles.laserEquipment}`} aria-labelledby={`${slug}-doctor`}>
             <Image
-              src="/doctors/svetlana-nersisyan-hd.webp"
-              alt="Врач-дерматовенеролог Светлана Арутюновна Нерсисян"
+              src={content.performer.photo}
+              alt={content.performer.alt}
               width={1160}
               height={1547}
               sizes="(max-width: 699px) 100vw, 42vw"
             />
             <div>
-              <h2 id={`${slug}-doctor`} className={`${home.title} ${styles.sectionTitle}`}>Кто проводит процедуру</h2>
-              <p className={styles.sectionDescription}>
-                Светлана Арутюновна Нерсисян — врач-дерматовенеролог, 29 лет врачебной практики. {content.doctorNote}
-              </p>
-              <Link href="/specialists/svetlana-nersisyan" className={home.textLink}>
-                О враче <ArrowUpRight size={16} aria-hidden="true" />
+              <h2 id={`${slug}-doctor`} className={`${home.title} ${styles.sectionTitle}`}>
+                {content.performer.heading ?? "Кто проводит процедуру"}
+              </h2>
+              <p className={styles.sectionDescription}>{content.performer.text}</p>
+              <Link href={content.performer.href} className={home.textLink}>
+                {content.performer.linkLabel} <ArrowUpRight size={16} aria-hidden="true" />
               </Link>
             </div>
           </section>
@@ -183,6 +225,8 @@ export function DirectionLanding({
             </p>
           </section>
 
+          {beforeFaq}
+
           <section className={styles.priceSection} aria-labelledby={`${slug}-faq`}>
             <h2 id={`${slug}-faq`} className={`${home.title} ${styles.sectionTitle}`}>Частые вопросы</h2>
             <div className={styles.disclosureList}>
@@ -210,7 +254,8 @@ export function DirectionLanding({
             </div>
           </section>
 
-          <RelatedDirections currentPath={content.path} />
+          {related && <RelatedDirections currentPath={content.path} title={related.title} links={related.links} />}
+          <RelatedDirections currentPath={content.parent?.path ?? content.path} />
 
           <p className={direction.medicalWarning} role="note">{MEDICAL_WARNING}</p>
         </div>

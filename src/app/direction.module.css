@@ -205,3 +205,30 @@
   gap: 0.6rem 1.6rem;
   margin-top: 0.8rem;
 }
+
+.breadcrumbs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin-bottom: 0.9rem;
+  color: #cfc7b9;
+  font-size: 0.82rem;
+}
+
+.breadcrumbs a {
+  color: inherit;
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+}
+
+.rowLink {
+  color: var(--ink);
+  text-decoration: underline;
+  text-decoration-color: var(--line);
+  text-underline-offset: 0.2em;
+}
+
+.rowLink:hover {
+  color: var(--brass-ink);
+  text-decoration-color: currentColor;
+}

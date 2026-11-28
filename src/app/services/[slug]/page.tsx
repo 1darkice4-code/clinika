@@ -5,15 +5,16 @@ import { SiteFooter } from "@/components/layout/site-footer";
 import { SiteHeader } from "@/components/layout/site-header";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
-import { LASER_SERVICES, PUBLIC_HIDDEN_SERVICE_SLUGS } from "@/domain/service/current-price-list";
+import { zonePagePathForService } from "@/content/laser-zones/pages";
+import { PUBLIC_HIDDEN_SERVICE_SLUGS } from "@/domain/service/current-price-list";
 import { prisma } from "@/lib/prisma";
 import { formatPrice } from "@/lib/utils";
 
 // Страницы отдельных услуг — это одна строка прайса (цена и длительность) и почти
 // дублируют друг друга. Закрываем их от индексации (noindex, follow), чтобы поисковики
 // продвигали /lazernaya-epilyatsiya и /prices, а не десятки «малоценных» страниц.
-// Комплекс laser-bikini-underarms имеет собственную страницу и индексируется.
-const laserZoneSlugs = new Set<string>(LASER_SERVICES.map((service) => service.slug));
+// Комплекс laser-bikini-underarms имеет собственную страницу и индексируется,
+// а зоны лазерной эпиляции перенаправляются на страницы /lazernaya-epilyatsiya/<зона>.
 
 type PageProps = {
   params: Promise<{ slug: string }>;
@@ -30,7 +31,11 @@ const DIRECTION_BY_SERVICE_PREFIX: [prefix: string, path: string][] = [
 ];
 
 function directionPathFor(slug: string) {
-  return DIRECTION_BY_SERVICE_PREFIX.find(([prefix]) => slug.startsWith(prefix))?.[1] ?? null;
+  return (
+    zonePagePathForService(slug) ??
+    DIRECTION_BY_SERVICE_PREFIX.find(([prefix]) => slug.startsWith(prefix))?.[1] ??
+    null
+  );
 }
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
@@ -69,18 +74,12 @@ export default async function ServicePage({ params }: PageProps) {
     <>
       <SiteHeader />
       <main className="mx-auto max-w-5xl px-4 py-14 sm:px-6 lg:px-8">
-        {laserZoneSlugs.has(service.slug) ? (
-          <Link href="/lazernaya-epilyatsiya" className="text-sm text-primary">
-            ← Лазерная эпиляция: все зоны и цены
+        <div className="flex flex-wrap items-center gap-3">
+          <Link href="/prices" className="text-sm text-primary">
+            ← Все услуги и цены
           </Link>
-        ) : (
-          <div className="flex flex-wrap items-center gap-3">
-            <Link href="/prices" className="text-sm text-primary">
-              ← Все услуги и цены
-            </Link>
-            <Badge>{service.category.name}</Badge>
-          </div>
-        )}
+          <Badge>{service.category.name}</Badge>
+        </div>
         <h1 className="mt-4 text-4xl font-semibold">{service.name}</h1>
         <p className="mt-4 text-lg text-muted-foreground">{service.shortDescription}</p>
         <div className="mt-8 grid gap-4 md:grid-cols-3">

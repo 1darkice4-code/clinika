@@ -5,7 +5,19 @@ export type DirectionTextSection = {
   note?: string;
 };
 
-export type DirectionPriceRow = { name: string; price: string };
+/** Строка таблицы цен: одна цена (`price`) или несколько колонок (`cells`). */
+export type DirectionPriceRow = { name: string; price?: string; cells?: readonly string[]; href?: string };
+
+export type DirectionPerformer = {
+  name: string;
+  /** Подпись в заголовке блока, например «Кто проводит процедуру». */
+  heading?: string;
+  photo: string;
+  alt: string;
+  text: string;
+  href: string;
+  linkLabel: string;
+};
 
 export type DirectionContent = {
   /** Путь страницы, например "/botulinoterapiya". */
@@ -24,12 +36,16 @@ export type DirectionContent = {
   bookingLabel: string;
   prices: {
     title: string;
+    /** Заголовки колонок; по умолчанию «Услуга» и «Цена». */
+    head?: readonly string[];
     rows: readonly DirectionPriceRow[];
     note: string;
   };
-  doctorNote: string;
+  performer: DirectionPerformer;
+  /** Родительская страница для хлебных крошек, например лазерная эпиляция для страниц зон. */
+  parent?: { name: string; path: string };
   /** Разделы; соседние элементы массива-пары выводятся в две колонки. */
   sections: readonly (DirectionTextSection | readonly [DirectionTextSection, DirectionTextSection])[];
-  contraindications: { intro: string; items: readonly string[]; note: string };
+  contraindications: { readonly intro: string; readonly items: readonly string[]; readonly note: string };
   questions: readonly { question: string; answer: string }[];
 };

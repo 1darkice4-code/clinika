@@ -1,5 +1,6 @@
 import { CONSULTATION_SERVICES, botulinumPriceRange } from "@/domain/service/current-price-list";
 import { formatPrice } from "@/lib/utils";
+import { svetlanaPerformer } from "./performers";
 import type { DirectionContent } from "./types";
 
 // Медицинские формулировки — на согласование врачу клиники.
@@ -36,8 +37,9 @@ export const botulinoterapiya: DirectionContent = {
     ],
     note: "Итоговая стоимость зависит от зоны и количества единиц препарата — врач назовёт её на осмотре, до начала процедуры."
   },
-  doctorNote:
-    "Перед процедурой она осматривает лицо, оценивает работу мимических мышц и подбирает препарат и дозировку так, чтобы мимика оставалась естественной.",
+  performer: svetlanaPerformer(
+    "Перед процедурой она осматривает лицо, оценивает работу мимических мышц и подбирает препарат и дозировку так, чтобы мимика оставалась естественной."
+  ),
   sections: [
     [
       {

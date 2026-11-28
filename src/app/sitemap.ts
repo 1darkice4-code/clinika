@@ -1,5 +1,6 @@
 import type { MetadataRoute } from "next";
 import { CLINIC_SITE_URL as appUrl } from "@/config/clinic";
+import { LASER_ZONE_PAGES } from "@/content/laser-zones/pages";
 import { LASER_COMBO } from "@/domain/service/laser-combo";
 import { prisma } from "@/lib/prisma";
 
@@ -28,6 +29,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   return [
     { url: `${appUrl}/` },
     { url: `${appUrl}/lazernaya-epilyatsiya` },
+    ...LASER_ZONE_PAGES.map((page) => ({ url: `${appUrl}${page.content.path}` })),
     { url: `${appUrl}/botulinoterapiya` },
     { url: `${appUrl}/lechenie-gipergidroza` },
     { url: `${appUrl}/konturnaya-plastika` },

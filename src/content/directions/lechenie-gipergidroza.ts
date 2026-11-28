@@ -1,5 +1,6 @@
 import { CONSULTATION_SERVICES, botulinumPriceRange } from "@/domain/service/current-price-list";
 import { formatPrice } from "@/lib/utils";
+import { svetlanaPerformer } from "./performers";
 import type { DirectionContent } from "./types";
 
 // Медицинские формулировки — на согласование врачу клиники.
@@ -29,8 +30,9 @@ export const lechenieGipergidroza: DirectionContent = {
     ],
     note: "Стоимость зависит от зоны и количества препарата. Врач определит зону потоотделения и назовёт итоговую цену до начала процедуры."
   },
-  doctorNote:
-    "Она выясняет причину повышенной потливости, определяет границы зоны и подбирает дозировку. Если потливость может быть связана с другим заболеванием, врач порекомендует обследование.",
+  performer: svetlanaPerformer(
+    "Она выясняет причину повышенной потливости, определяет границы зоны и подбирает дозировку. Если потливость может быть связана с другим заболеванием, врач порекомендует обследование."
+  ),
   sections: [
     [
       {

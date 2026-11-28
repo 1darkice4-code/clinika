@@ -9,6 +9,7 @@ import { ClinicPage } from "../clinic-page";
 import styles from "../clinic-pages.module.css";
 import home from "../home.module.css";
 import { RelatedDirections } from "@/components/direction/direction-landing";
+import { LASER_ZONE_LINKS } from "@/content/laser-zones/pages";
 import { LaserPriceList } from "@/components/pricing/laser-price-list";
 import {
   aftercare,
@@ -127,6 +128,11 @@ export default async function LaserHairRemovalPage() {
             <div className={styles.laserPricePanel}>
               <LaserPriceList bookableZones={bookableZones} />
             </div>
+            <RelatedDirections
+              currentPath="/lazernaya-epilyatsiya"
+              title="Подробнее о зонах"
+              links={LASER_ZONE_LINKS}
+            />
             <p className={styles.priceNotice}>
               Цены могут отличаться от актуальных. Уточнить стоимость можно по телефону{" "}
               <a href={`tel:${phone}`}>{phone}</a>.

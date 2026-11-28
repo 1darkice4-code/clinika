@@ -1,5 +1,6 @@
 import { CONSULTATION_SERVICES, CONTOUR_SERVICES } from "@/domain/service/current-price-list";
 import { formatPrice } from "@/lib/utils";
+import { svetlanaPerformer } from "./performers";
 import type { DirectionContent } from "./types";
 
 // Медицинские формулировки — на согласование врачу клиники.
@@ -32,8 +33,9 @@ export const konturnayaPlastika: DirectionContent = {
     ],
     note: "Цена указана за шприц препарата. Сколько препарата понадобится, зависит от зоны и задачи — врач скажет на консультации."
   },
-  doctorNote:
-    "Она оценивает пропорции лица, подбирает препарат и технику введения и честно говорит, какая коррекция действительно нужна, а от какой лучше отказаться.",
+  performer: svetlanaPerformer(
+    "Она оценивает пропорции лица, подбирает препарат и технику введения и честно говорит, какая коррекция действительно нужна, а от какой лучше отказаться."
+  ),
   sections: [
     [
       {
