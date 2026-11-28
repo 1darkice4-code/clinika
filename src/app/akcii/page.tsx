@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { ArrowUpRight, Phone } from "lucide-react";
-import Image from "next/image";
 import Link from "next/link";
+import { MastheadFigure } from "@/components/direction/masthead-figure";
 import { MEDICAL_WARNING, RelatedDirections } from "@/components/direction/direction-landing";
 import styles from "@/app/clinic-pages.module.css";
 import direction from "@/app/direction.module.css";
@@ -103,9 +103,12 @@ export default async function PromoPage() {
                 </a>
               </div>
             </div>
-            <div className={direction.mastheadPhoto}>
-              <Image src="/clinic/laser-equipment.webp" alt="Аппарат для лазерной эпиляции в клинике «Сияние»" fill sizes="(max-width: 760px) 100vw, 52vw" preload />
-            </div>
+            <MastheadFigure
+              src="/clinic/model-laser-goggles-2.webp"
+              alt="Акция на лазерную эпиляцию: модель в защитных очках для лазера"
+              width={1126}
+              height={1893}
+            />
           </div>
         </section>
 

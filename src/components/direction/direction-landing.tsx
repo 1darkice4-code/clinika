@@ -3,6 +3,7 @@ import { ArrowDown, ArrowUpRight, MapPin, Phone } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { MastheadFigure } from "./masthead-figure";
+import { shareImageOf } from "@/content/directions/metadata";
 import { ClinicPage } from "@/app/clinic-page";
 import styles from "@/app/clinic-pages.module.css";
 import direction from "@/app/direction.module.css";
@@ -97,7 +98,7 @@ export function DirectionLanding({
     serviceType: content.serviceType,
     breadcrumb: content.shortName,
     parent: content.parent,
-    image: content.image.src,
+    image: shareImageOf(content).src,
     offers,
     questions: content.questions
   });
@@ -145,6 +146,7 @@ export function DirectionLanding({
                 alt={content.image.alt}
                 width={content.image.width ?? 848}
                 height={content.image.height ?? 736}
+                focusX={content.image.focusX}
               />
             ) : (
               <div className={direction.mastheadPhoto}>

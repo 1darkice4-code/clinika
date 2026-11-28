@@ -9,6 +9,8 @@ import { formatPrice } from "@/lib/utils";
 // основной страницы /lazernaya-epilyatsiya, согласованные врачом; новые детали по зонам
 // стоит показать врачу перед выкаткой.
 
+const LASER_EQUIPMENT_IMAGE = { src: "/clinic/laser-equipment.webp", alt: "Аппарат для лазерной эпиляции в клинике «Сияние»" };
+
 export const LASER_PARENT = { name: "Лазерная эпиляция", path: "/lazernaya-epilyatsiya" } as const;
 
 type LaserZoneSlug = (typeof LASER_SERVICES)[number]["slug"];
@@ -55,7 +57,8 @@ export function buildLaserZonePage(input: LaserZonePageInput): LaserZonePage {
     metaDescription: input.metaDescription,
     lead: input.lead,
     priceBadge: `от ${rub(minPrice)} за сеанс`,
-    image: input.image ?? { src: "/clinic/laser-equipment.webp", alt: "Аппарат для лазерной эпиляции в клинике «Сияние»" },
+    image: input.image ?? LASER_EQUIPMENT_IMAGE,
+    shareImage: LASER_EQUIPMENT_IMAGE,
     bookingHref: zoneBookingHref(zones[0].slug),
     bookingLabel: "Записаться",
     parent: LASER_PARENT,

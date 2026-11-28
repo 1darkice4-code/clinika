@@ -76,10 +76,11 @@
 
 .figureGlow {
   position: absolute;
-  left: 50%;
+  left: var(--ring-x, 50%);
   top: 6%;
   z-index: -2;
-  width: 118%;
+  /* Для широкого фото (сидящая модель) свечение и кольцо считаются от высоты, а не от ширины. */
+  width: min(118%, calc(130% / var(--figure-ratio, 1)));
   aspect-ratio: 1;
   translate: -50% 0;
   border-radius: 50%;
@@ -88,10 +89,10 @@
 
 .figureRing {
   position: absolute;
-  left: 53%;
+  left: var(--ring-x, 53%);
   top: 9%;
   z-index: -1;
-  width: 88%;
+  width: min(88%, calc(100% / var(--figure-ratio, 1)));
   aspect-ratio: 1;
   translate: -50% 0;
   border: 1.5px solid rgb(223 189 130 / 55%);

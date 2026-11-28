@@ -67,6 +67,14 @@ export const bikiniPage = buildLaserZonePage({
 
 export const podmyshkiPage = buildLaserZonePage({
   slug: "podmyshki",
+  image: {
+    src: "/clinic/model-laser-podmyshki.webp",
+    alt: "Лазерная эпиляция подмышек: модель с поднятыми руками",
+    cutout: true,
+    width: 1548,
+    height: 1730,
+    focusX: 50
+  },
   title: "Лазерная эпиляция подмышек в Чите",
   shortName: "Подмышки",
   metaDescription:
@@ -118,6 +126,14 @@ export const podmyshkiPage = buildLaserZonePage({
 
 export const nogiPage = buildLaserZonePage({
   slug: "nogi",
+  image: {
+    src: "/clinic/model-laser-nogi.webp",
+    alt: "Лазерная эпиляция ног: модель сидит, вытянув гладкие ноги",
+    cutout: true,
+    width: 1821,
+    height: 1144,
+    focusX: 64
+  },
   title: "Лазерная эпиляция ног в Чите",
   shortName: "Ноги",
   metaDescription:
@@ -180,9 +196,12 @@ export const litsoPage = buildLaserZonePage({
   lead: "Верхняя губа (усики), подбородок, шея или лицо полностью. Сеанс — от 15 минут.",
   zones: ["laser-upper-lip", "laser-chin", "laser-neck", "laser-full-face"],
   image: {
-    src: "/clinic/model-litso-bust.webp",
-    alt: "Лазерная эпиляция лица: модель с гладкой кожей лица, шеи и плеч",
-    cutout: true
+    src: "/clinic/model-litso-face.webp",
+    alt: "Лазерная эпиляция лица: модель с гладкой кожей лица и шеи",
+    cutout: true,
+    width: 1560,
+    height: 1767,
+    focusX: 50
   },
   sections: [
     [
@@ -276,6 +295,14 @@ export const rukiPage = buildLaserZonePage({
 
 export const muzhskayaPage = buildLaserZonePage({
   slug: "dlya-muzhchin",
+  image: {
+    src: "/clinic/model-laser-men.webp",
+    alt: "Мужская лазерная эпиляция: модель-мужчина, вид со спины",
+    cutout: true,
+    width: 1335,
+    height: 1845,
+    focusX: 52
+  },
   title: "Мужская лазерная эпиляция в Чите",
   shortName: "Для мужчин",
   metaDescription:

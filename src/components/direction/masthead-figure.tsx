@@ -2,15 +2,23 @@ import Image from "next/image";
 import type { CSSProperties } from "react";
 import direction from "@/app/direction.module.css";
 
-type MastheadFigureProps = { src: string; alt: string; width: number; height: number };
+type MastheadFigureProps = {
+  src: string;
+  alt: string;
+  width: number;
+  height: number;
+  /** Центр кольца по горизонтали, % ширины фото — ставьте на голову/корпус модели. */
+  focusX?: number;
+};
 
 /**
  * Модель на прозрачном фоне в тёмной шапке страницы: свечение, кольцо и звёзды из логотипа.
  * Фото должно касаться только нижнего края кадра — этот срез ставится на кромку шапки.
  */
-export function MastheadFigure({ src, alt, width, height }: MastheadFigureProps) {
+export function MastheadFigure({ src, alt, width, height, focusX = 53 }: MastheadFigureProps) {
+  const vars = { "--figure-ratio": width / height, "--ring-x": `${focusX}%` } as CSSProperties;
   return (
-    <div className={direction.mastheadFigure} style={{ "--figure-ratio": width / height } as CSSProperties}>
+    <div className={direction.mastheadFigure} style={vars}>
       <div className={direction.figureStage}>
         <span className={direction.figureGlow} aria-hidden="true" />
         <span className={direction.figureRing} aria-hidden="true" />

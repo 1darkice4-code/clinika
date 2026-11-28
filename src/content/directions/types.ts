@@ -35,9 +35,12 @@ export type DirectionContent = {
   priceBadge: string;
   /**
    * Фото в шапке; position — точка кадрирования (CSS object-position), например "center 22%".
-   * cutout — PNG/WebP с прозрачным фоном: модель без рамки на тёмной шапке со свечением.
+   * cutout — PNG/WebP с прозрачным фоном: модель без рамки на тёмной шапке со свечением;
+   * focusX — где по горизонтали центр кольца за моделью, в процентах (по умолчанию 53).
    */
-  image: { src: string; alt: string; position?: string; cutout?: boolean; width?: number; height?: number };
+  image: { src: string; alt: string; position?: string; cutout?: boolean; width?: number; height?: number; focusX?: number };
+  /** Картинка для превью ссылок и разметки, если в шапке модель без фона (прозрачный WebP для превью не годится). */
+  shareImage?: { src: string; alt: string };
   bookingHref: string;
   bookingLabel: string;
   prices: {
