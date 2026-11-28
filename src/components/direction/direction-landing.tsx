@@ -7,7 +7,6 @@ import styles from "@/app/clinic-pages.module.css";
 import direction from "@/app/direction.module.css";
 import home from "@/app/home.module.css";
 import type { DirectionContent, DirectionTextSection } from "@/content/directions/types";
-import { TrustStrip } from "@/components/trust/trust-strip";
 import type { ClinicSchemaContacts } from "@/lib/clinic-structured-data";
 import { buildDirectionStructuredData, serializeJsonLd, type DirectionOffer } from "@/lib/direction-structured-data";
 import { buildDirectionsUrl } from "@/lib/map";
@@ -146,8 +145,6 @@ export function DirectionLanding({
         </section>
 
         <div className={`${home.shell} ${styles.priceContent}`}>
-          <TrustStrip variant={content.performer.href.includes("nina") ? "laser" : "cosmetology"} />
-
           <section id="prices" className={`${styles.priceSection} ${direction.priceBlock}`} aria-labelledby={`${slug}-prices`}>
             <h2 id={`${slug}-prices`} className={`${home.title} ${styles.sectionTitle}`}>{content.prices.title}</h2>
             <div className={`${styles.disclosureList} ${direction.priceTableWrap}`}>

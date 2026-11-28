@@ -12,8 +12,9 @@ import {
   PUBLIC_HIDDEN_SERVICE_SLUGS
 } from "@/domain/service/current-price-list";
 
-// Торговые названия рецептурных ботулотоксинов не должны попадать на публичные страницы.
-const BRAND_PATTERN = /диспорт|релатокс|ксеомин|миотокс|новокутан|ботокс|dysport|relatox|xeomin|botox/i;
+// Торговые названия препаратов, которые применяет клиника, не должны попадать на публичные страницы.
+// Бытовое слово «ботокс» допустимо — согласовано с юристом клиники.
+const BRAND_PATTERN = /диспорт|релатокс|ксеомин|миотокс|новокутан|dysport|relatox|xeomin/i;
 
 describe("public botulinum names", () => {
   it("hides every brand-named botulinum service from the public price list", () => {

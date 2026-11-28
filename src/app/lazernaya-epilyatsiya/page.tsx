@@ -13,7 +13,6 @@ import { LASER_ZONE_LINKS } from "@/content/laser-zones/pages";
 import { LaserPriceList } from "@/components/pricing/laser-price-list";
 import { PromoBanner } from "@/components/promo/promo-banner";
 import { ReviewsBlock } from "@/components/reviews/reviews-block";
-import { TrustStrip } from "@/components/trust/trust-strip";
 import { LASER_COMBO, comboRegularPrice } from "@/domain/service/laser-combo";
 import {
   aftercare,
@@ -115,8 +114,6 @@ export default async function LaserHairRemovalPage() {
         </section>
 
         <div className={`${home.shell} ${styles.priceContent}`}>
-          <TrustStrip variant="laser" />
-
           {combo && (
             <section className={laser.comboOffer} aria-labelledby="laser-combo-title">
               <div>

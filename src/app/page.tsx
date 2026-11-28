@@ -5,12 +5,18 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { CLINIC_CONTACTS } from "@/config/clinic";
 import { FEATURED_REVIEW_SOURCE_URL } from "@/domain/review/featured-reviews";
-import { TrustStrip } from "@/components/trust/trust-strip";
 import { CURRENT_PROMO, isPromoActive, promoBookingHref, promoLastDayLabel, promoOffers } from "@/domain/promo/current-promo";
 import { JsonLd } from "@/components/seo/json-ld";
 import { getPublicContacts } from "@/domain/booking/public-catalog";
 import { CLINIC_ID, clinicNode, jsonLdGraph, webPageNode, websiteNode } from "@/lib/clinic-structured-data";
-import { LASER_SERVICES, PER_UNIT_PRICE_SLUGS } from "@/domain/service/current-price-list";
+import {
+  botulinumPriceRange,
+  CONSULTATION_SERVICES,
+  CONTOUR_SERVICES,
+  LASER_SERVICES,
+  PER_UNIT_PRICE_SLUGS
+} from "@/domain/service/current-price-list";
+import { LASER_COMBO } from "@/domain/service/laser-combo";
 import { FEATURED_SPECIALIST } from "@/domain/specialist/featured-specialist";
 import { buildDirectionsUrl, buildMapEmbedUrl } from "@/lib/map";
 import { prisma } from "@/lib/prisma";
@@ -170,6 +176,9 @@ export default async function HomePage({
     cosmeticServices.find((service) => /консультац/i.test(service.name));
   const schemaContacts = await getPublicContacts();
   const promoActive = isPromoActive();
+  const lipsMinPrice = Math.min(
+    ...CONTOUR_SERVICES.flatMap((item) => (/липс|lips/i.test(item.name) && item.priceExact ? [item.priceExact] : []))
+  );
   const clinicStructuredData = jsonLdGraph([
     { ...clinicNode(schemaContacts), description },
     websiteNode(),
@@ -191,13 +200,14 @@ export default async function HomePage({
           address={address}
           promo={promoActive ? { label: `−${CURRENT_PROMO.firstSessionDiscountPercent}% на первый сеанс лазера · до ${promoLastDayLabel()}`, href: "/akcii" } : null}
           laserBookingHref={promoActive ? promoBookingHref() : "/booking?booking=laser"}
+          quickLinks={[
+            { label: "Лазерная эпиляция", price: laserPrice, href: "/lazernaya-epilyatsiya" },
+            { label: "Бикини + подмышки", price: formatPrice(null, LASER_COMBO.price), href: `/services/${LASER_COMBO.slug}` },
+            { label: "Ботулинотерапия", price: `от ${formatPrice(null, botulinumPriceRange("wrinkles").min)} за ед.`, href: "/botulinoterapiya" },
+            { label: "Увеличение губ", price: `от ${formatPrice(null, lipsMinPrice)}`, href: "/konturnaya-plastika/guby" },
+            { label: "Приём дерматолога", price: formatPrice(null, CONSULTATION_SERVICES[0].priceExact), href: "/dermatolog-kosmetolog" }
+          ]}
         />
-
-        <section className={styles.trustSection} aria-label="Почему «Сияние»">
-          <div className={styles.shell}>
-            <TrustStrip variant="clinic" />
-          </div>
-        </section>
 
         <section id="services" className={styles.section}>
           <div className={styles.shell}>

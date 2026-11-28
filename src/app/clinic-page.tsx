@@ -5,6 +5,7 @@ import Link from "next/link";
 import { SiteHeader } from "@/components/layout/site-header";
 import { BrandMark } from "@/components/ui/brand-mark";
 import { CLINIC_LEGAL } from "@/config/clinic";
+import { buildDirectionsUrl } from "@/lib/map";
 import styles from "./home.module.css";
 
 const wordmark = Prata({
@@ -43,39 +44,54 @@ export function ClinicPage({
       {children}
       <footer className={styles.footer}>
         <div className={styles.shell}>
-          <div className={styles.footerGrid}>
-            <Link href="/" className={styles.footerBrand}>
-              <BrandMark />
-              <span>
-                <strong>Сияние</strong>
-                <span>Клиника эстетической медицины</span>
-              </span>
-            </Link>
-            <nav aria-label="Разделы сайта" className={styles.footerNav}>
-              <Link href="/#services">Услуги</Link>
-              <Link href="/prices">Прайс</Link>
-              <Link href="/#specialists">Специалисты</Link>
-              <Link href="/#contacts">Контакты</Link>
+          <div className={styles.footerColumns}>
+            <div className={styles.footerAbout}>
+              <Link href="/" className={styles.footerBrand}>
+                <BrandMark />
+                <span>
+                  <strong>Сияние</strong>
+                  <span>Клиника эстетической медицины</span>
+                </span>
+              </Link>
+              <address className={styles.footerContacts}>
+                <a href={buildDirectionsUrl(address)}>{address}</a>
+                <a href={`tel:${phone}`}>{phone}</a>
+                {email && <a href={`mailto:${email}`}>{email}</a>}
+              </address>
+              <Link href={bookingHref} className={styles.footerBooking}>
+                Записаться онлайн <ArrowRight aria-hidden="true" size={17} />
+              </Link>
+            </div>
+            <nav aria-labelledby="footer-services" className={styles.footerColumn}>
+              <p id="footer-services" className={styles.footerHeading}>Услуги</p>
+              <ul>
+                <li><Link href="/lazernaya-epilyatsiya">Лазерная эпиляция</Link></li>
+                <li><Link href="/botulinoterapiya">Ботулинотерапия</Link></li>
+                <li><Link href="/lechenie-gipergidroza">Лечение гипергидроза</Link></li>
+                <li><Link href="/konturnaya-plastika">Контурная пластика</Link></li>
+                <li><Link href="/konturnaya-plastika/guby">Увеличение губ</Link></li>
+                <li><Link href="/dermatolog-kosmetolog">Дерматолог-косметолог</Link></li>
+              </ul>
             </nav>
-            <Link href={bookingHref} className={styles.footerBooking}>
-              Записаться <ArrowRight aria-hidden="true" size={17} />
-            </Link>
+            <nav aria-labelledby="footer-clients" className={styles.footerColumn}>
+              <p id="footer-clients" className={styles.footerHeading}>Клиентам</p>
+              <ul>
+                <li><Link href="/prices">Цены</Link></li>
+                <li><Link href="/akcii">Акции</Link></li>
+                <li><Link href="/otzyvy">Отзывы</Link></li>
+                <li><Link href="/#specialists">Специалисты</Link></li>
+                <li><Link href="/booking">Онлайн-запись</Link></li>
+                <li><Link href="/#contacts">Как нас найти</Link></li>
+              </ul>
+            </nav>
           </div>
-          <nav aria-label="Направления" className={styles.footerLegal}>
-            <Link href="/lazernaya-epilyatsiya">Лазерная эпиляция</Link>
-            <Link href="/botulinoterapiya">Ботулинотерапия</Link>
-            <Link href="/lechenie-gipergidroza">Лечение гипергидроза</Link>
-            <Link href="/konturnaya-plastika">Контурная пластика</Link>
-            <Link href="/konturnaya-plastika/guby">Увеличение губ</Link>
-            <Link href="/dermatolog-kosmetolog">Дерматолог-косметолог</Link>
-            <Link href="/akcii">Акции</Link>
-          </nav>
-          <div className={styles.footerLegal}>
-            <Link href="/legal/privacy-policy">Политика конфиденциальности</Link>
-            <Link href="/legal/personal-data-consent">Согласие на обработку данных</Link>
-            {email && <a href={`mailto:${email}`}>{email}</a>}
+          <div className={styles.footerBottom}>
+            <p>© {new Date().getFullYear()} «Сияние», Чита{legalLine ? ` · ${legalLine}` : ""}</p>
+            <nav aria-label="Документы">
+              <Link href="/legal/privacy-policy">Политика конфиденциальности</Link>
+              <Link href="/legal/personal-data-consent">Согласие на обработку данных</Link>
+            </nav>
           </div>
-          {legalLine && <p className={styles.footerLegal}>{legalLine}</p>}
         </div>
       </footer>
     </div>
