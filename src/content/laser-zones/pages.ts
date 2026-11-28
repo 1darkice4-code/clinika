@@ -263,6 +263,15 @@ export const litsoPage = buildLaserZonePage({
 
 export const rukiPage = buildLaserZonePage({
   slug: "ruki",
+  image: {
+    src: "/clinic/model-laser-ruki.webp",
+    alt: "Лазерная эпиляция рук: модель проводит пальцами по предплечью",
+    cutout: true,
+    width: 1322,
+    height: 1821,
+    focusX: 58,
+    chin: 0.5
+  },
   title: "Лазерная эпиляция рук в Чите",
   shortName: "Руки",
   metaDescription:
