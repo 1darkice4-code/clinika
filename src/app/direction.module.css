@@ -64,7 +64,8 @@
 .figureStage {
   position: relative;
   isolation: isolate;
-  width: min(94%, 34rem);
+  /* Ширина ограничена и по высоте: вертикальное фото не должно растягивать шапку. */
+  width: min(94%, 34rem, calc(36rem * var(--figure-ratio, 1)));
 }
 
 .figureImage {
@@ -122,7 +123,7 @@
   }
 
   .figureStage {
-    width: min(86%, 22rem);
+    width: min(86%, 22rem, calc(18.5rem * var(--figure-ratio, 1)));
   }
 
   /* Тонкая золотая линия-«подставка» под бюстом. */

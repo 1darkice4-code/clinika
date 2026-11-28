@@ -9,6 +9,7 @@ import { ClinicPage } from "../clinic-page";
 import styles from "../clinic-pages.module.css";
 import home from "../home.module.css";
 import { RelatedDirections } from "@/components/direction/direction-landing";
+import { MastheadFigure } from "@/components/direction/masthead-figure";
 import { LASER_ZONE_LINKS } from "@/content/laser-zones/pages";
 import { LaserPriceList } from "@/components/pricing/laser-price-list";
 import { PromoBanner } from "@/components/promo/promo-banner";
@@ -101,15 +102,12 @@ export default async function LaserHairRemovalPage() {
                 </Link>
               </div>
             </div>
-            <div className={laser.mastheadPhoto}>
-              <Image
-                src="/clinic/treatment-room.webp"
-                alt="Кабинет лазерной эпиляции клиники «Сияние»"
-                fill
-                sizes="(max-width: 760px) 100vw, 52vw"
-                preload
-              />
-            </div>
+            <MastheadFigure
+              src="/clinic/model-laser-main.webp"
+              alt="Лазерная эпиляция в Чите: модель в защитных очках для лазера"
+              width={1122}
+              height={1394}
+            />
           </div>
         </section>
 
