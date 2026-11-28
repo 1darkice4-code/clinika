@@ -23,7 +23,15 @@ export const uvelichenieGub: DirectionContent = {
   metaDescription: `Увеличение губ филлерами на основе гиалуроновой кислоты в Чите: объём, форма, контур. Процедуру проводит врач-дерматовенеролог. Цена от ${rub(minPrice)}.`,
   lead: "Контурная пластика губ филлерами на основе гиалуроновой кислоты: аккуратный объём, чёткий контур и симметрия без эффекта «перекачанных» губ.",
   priceBadge: `от ${rub(minPrice)}`,
-  image: { src: "/clinic/consultation-room.webp", alt: "Кабинет врача-косметолога клиники «Сияние»" },
+  image: {
+    src: "/clinic/model-guby.webp",
+    alt: "Увеличение губ в Чите: модель с естественной формой губ",
+    cutout: true,
+    width: 1600,
+    height: 1696,
+    focusX: 57
+  },
+  shareImage: { src: "/clinic/consultation-room.webp", alt: "Кабинет врача-косметолога клиники «Сияние»" },
   bookingHref: `/booking?booking=doctor&service=${chief.slug}`,
   bookingLabel: "Записаться на консультацию",
   prices: {

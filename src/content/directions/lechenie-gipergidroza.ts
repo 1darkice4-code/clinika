@@ -19,7 +19,15 @@ export const lechenieGipergidroza: DirectionContent = {
   metaDescription: `Лечение гипергидроза в Чите: ботокс в подмышки, на ладони и стопы снижает потливость в среднем на 6–9 месяцев. Проводит врач-дерматовенеролог. От ${rub(range.min)}.`,
   lead: "Инъекции ботулотоксина снижают потоотделение в подмышках, на ладонях или стопах. Эффект — в среднем на 6–9 месяцев.",
   priceBadge: `от ${rub(range.min)}`,
-  image: { src: "/clinic/treatment-room.webp", alt: "Процедурный кабинет клиники «Сияние»" },
+  image: {
+    src: "/clinic/model-gipergidroz.webp",
+    alt: "Лечение гипергидроза: модель в белой майке с поднятыми руками",
+    cutout: true,
+    width: 1553,
+    height: 1709,
+    focusX: 54
+  },
+  shareImage: { src: "/clinic/treatment-room.webp", alt: "Процедурный кабинет клиники «Сияние»" },
   bookingHref: "/booking?booking=doctor&service=botulinum-hyperhidrosis",
   bookingLabel: "Записаться",
   prices: {

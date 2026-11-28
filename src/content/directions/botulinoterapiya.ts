@@ -21,7 +21,15 @@ export const botulinoterapiya: DirectionContent = {
   metaDescription: `Ботокс в Чите — уколы красоты от мимических морщин: лоб, межбровье, «гусиные лапки». Процедуру проводит врач-дерматовенеролог. От ${rub(wrinkles.min)} за ед.`,
   lead: "Ботокс — уколы красоты от мимических морщин: лоб, межбровье, «гусиные лапки». Препарат и дозировку врач подбирает на осмотре.",
   priceBadge: `от ${rub(wrinkles.min)} за 1 ед.`,
-  image: { src: "/clinic/consultation-room.webp", alt: "Кабинет врача-косметолога клиники «Сияние»" },
+  image: {
+    src: "/clinic/model-botox.webp",
+    alt: "Ботулинотерапия в Чите: модель с естественной мимикой",
+    cutout: true,
+    width: 1568,
+    height: 1652,
+    focusX: 54
+  },
+  shareImage: { src: "/clinic/consultation-room.webp", alt: "Кабинет врача-косметолога клиники «Сияние»" },
   bookingHref: "/booking?booking=doctor&service=botulinum-wrinkles",
   bookingLabel: "Записаться",
   prices: {

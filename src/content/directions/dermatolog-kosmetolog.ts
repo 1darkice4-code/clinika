@@ -18,7 +18,15 @@ export const dermatologKosmetolog: DirectionContent = {
   metaDescription: `Приём врача-дерматовенеролога и косметолога в Чите: осмотр кожи, план ухода и процедур. Стаж 29 лет. Консультация — ${rub(chief.priceExact)}, повторный приём бесплатно.`,
   lead: "Платный приём врача-дерматовенеролога и косметолога: осмотр кожи, разбор жалоб и понятный план ухода или процедур.",
   priceBadge: `приём ${rub(chief.priceExact)}`,
-  image: { src: "/clinic/consultation-room.webp", alt: "Кабинет врача-дерматолога клиники «Сияние»" },
+  image: {
+    src: "/clinic/model-dermatolog.webp",
+    alt: "Дерматолог-косметолог в Чите: модель касается щеки",
+    cutout: true,
+    width: 1600,
+    height: 1436,
+    focusX: 55
+  },
+  shareImage: { src: "/clinic/consultation-room.webp", alt: "Кабинет врача-дерматолога клиники «Сияние»" },
   bookingHref: `/booking?booking=doctor&service=${chief.slug}`,
   bookingLabel: "Записаться на приём",
   prices: {
